@@ -1,0 +1,1881 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Expert Split</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#F7F9FA; --surface:#FFFFFF; --surface-2:#F0F4F6;
+  --ink:#16202B; --ink-2:#41525F; --ink-3:#6B7D8A;
+  --line:#DCE4E9; --line-2:#C6D2DA;
+  --accent:#0F6E7A; --accent-ink:#0B535C; --accent-soft:#E2F0F2;
+  --good:#1C6647; --good-soft:#E3F1EA; --good-line:#BEDCCC;
+  --warn:#8F5410; --warn-soft:#FAEFDD; --warn-line:#E8D3AE;
+  --bad:#A33A2E;
+  --code-bg:#10323A; --code-ink:#D6E6E9; --code-k:#7FD2DB; --code-s:#9FD9B4; --code-c:#7E96A0;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0D1418; --surface:#141D23; --surface-2:#19242B;
+    --ink:#DEE8EE; --ink-2:#A5B7C2; --ink-3:#7E919D;
+    --line:#243139; --line-2:#31424C;
+    --accent:#54B9C5; --accent-ink:#7FD2DB; --accent-soft:#10323A;
+    --good:#5CBB8D; --good-soft:#11291F; --good-line:#23452F;
+    --warn:#DBA55A; --warn-soft:#2E2412; --warn-line:#4A3A1C;
+    --bad:#E08A7B;
+    --code-bg:#0A1A1F; --code-ink:#CFE2E6;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0D1418; --surface:#141D23; --surface-2:#19242B;
+  --ink:#DEE8EE; --ink-2:#A5B7C2; --ink-3:#7E919D;
+  --line:#243139; --line-2:#31424C;
+  --accent:#54B9C5; --accent-ink:#7FD2DB; --accent-soft:#10323A;
+  --good:#5CBB8D; --good-soft:#11291F; --good-line:#23452F;
+  --warn:#DBA55A; --warn-soft:#2E2412; --warn-line:#4A3A1C;
+  --bad:#E08A7B;
+  --code-bg:#0A1A1F; --code-ink:#CFE2E6;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16.5px;line-height:1.66;-webkit-font-smoothing:antialiased}
+.wrap{max-width:788px;margin:0 auto;padding:0 24px 110px}
+.mast{padding:64px 0 32px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--accent);font-weight:500;margin:0 0 18px}
+h1{font-family:Newsreader,Georgia,serif;font-weight:500;font-size:clamp(2.2rem,5.2vw,3.3rem);
+  line-height:1.08;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance}
+.standfirst{font-size:1.13rem;color:var(--ink-2);margin:0}
+.facts{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:var(--r);
+  overflow:hidden;background:var(--surface);margin-top:32px}
+.fact{padding:12px 18px;border-right:1px solid var(--line);flex:1 1 auto;min-width:142px}
+.fact:last-child{border-right:0}
+.fk{display:block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3)}
+.fv{display:block;font-size:14.5px;font-weight:500;margin-top:3px;font-variant-numeric:tabular-nums}
+h2{font-family:Newsreader,Georgia,serif;font-weight:500;font-size:1.95rem;line-height:1.15;
+  margin:0 0 6px;letter-spacing:-.01em;display:flex;flex-direction:column;gap:7px}
+.gtag{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--accent);font-weight:500}
+.grp{margin-top:66px}
+.grp>h2{padding-bottom:14px;border-bottom:2px solid var(--accent-soft)}
+h3{font-family:Newsreader,Georgia,serif;font-weight:500;font-size:1.42rem;line-height:1.2;
+  margin:0 0 12px;letter-spacing:-.008em;text-wrap:balance}
+h4{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:500;margin:22px 0 9px}
+.cell{margin-top:34px;padding-top:26px;border-top:1px solid var(--line)}
+.grp>.cell:first-of-type{border-top:0}
+.body p{margin:0 0 13px}
+.io{margin:16px 0 0;padding:11px 15px;background:var(--accent-soft);border-radius:8px;
+  font-size:14.5px;color:var(--ink-2)}
+code{font-family:"IBM Plex Mono",monospace;font-size:.875em;background:var(--surface-2);
+  padding:1.5px 5px;border-radius:4px;color:var(--accent-ink)}
+details.src{margin-top:18px;border:1px solid var(--line);border-radius:var(--r);
+  background:var(--surface);overflow:hidden}
+details.src>summary{cursor:pointer;padding:11px 16px;font-family:"IBM Plex Mono",monospace;
+  font-size:12.5px;color:var(--accent);list-style:none;user-select:none;font-weight:500}
+details.src>summary::-webkit-details-marker{display:none}
+details.src>summary::before{content:"\25B8  ";color:var(--ink-3)}
+details.src[open]>summary::before{content:"\25BE  "}
+details.src>summary:hover{background:var(--surface-2)}
+details.src>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+pre.code{margin:0;padding:18px 20px;background:var(--code-bg);color:var(--code-ink);
+  font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.62;
+  overflow-x:auto;border-top:1px solid var(--line)}
+pre.code .k{color:var(--code-k)} pre.code .s{color:var(--code-s)}
+pre.code .c{color:var(--code-c);font-style:italic}
+.outwrap{border:1px solid var(--line-2);border-radius:var(--r);background:var(--surface-2);
+  overflow:hidden}
+pre.out{margin:0;padding:16px 18px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;
+  line-height:1.58;overflow-x:auto;color:var(--ink);font-variant-numeric:tabular-nums}
+.outnote{margin:9px 0 0;font-size:13.5px;color:var(--ink-3);font-style:italic}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);
+  background:var(--surface);margin:22px 0}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{padding:11px 15px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:500;background:var(--surface-2)}
+td.tk{font-family:"IBM Plex Mono",monospace;color:var(--accent);font-weight:500;width:46px}
+td.tn{color:var(--ink-2);width:134px}
+td.claim{color:var(--bad);width:33%;font-weight:500}
+.callout{margin:26px 0;padding:18px 22px;border-radius:var(--r);
+  border:1px solid var(--good-line);background:var(--good-soft)}
+.callout.warn{border-color:var(--warn-line);background:var(--warn-soft)}
+.callout h4{margin:0 0 8px;color:var(--good)}
+.callout.warn h4{color:var(--warn)}
+.callout p{margin:0 0 10px}
+.callout p:last-child{margin:0}
+.foot{margin-top:76px;padding-top:26px;border-top:1px solid var(--line);
+  color:var(--ink-3);font-size:14px}
+a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:2px}
+@media (max-width:640px){
+  body{font-size:16px} .wrap{padding:0 17px 80px}
+  .fact{border-right:0;border-bottom:1px solid var(--line)}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head><body>
+<div class="wrap">
+<header class="mast">
+  <p class="eyebrow">ERA V5 &middot; Session 14 &middot; Mixture-of-Experts</p>
+  <h1>Split a working model into experts, and keep it learning</h1>
+  <p class="standfirst">A dense GPT, cut into 32 experts per layer without changing what it computes, then trained on.
+  The conversion was the easy part. Keeping the experts learning took a router slowed tenfold and experts slowed eightfold,
+  and two diagnostics to find out why.</p>
+  <div class="facts"><div class="fact"><span class="fk">Device</span><span class="fv">Tesla T4 &middot; fp16</span></div><div class="fact"><span class="fk">Dense model</span><span class="fv">16L &times; 320 &middot; 22.5M</span></div><div class="fact"><span class="fk">MoE</span><span class="fv">32 experts/layer &middot; 114.4M / 22.6M</span></div><div class="fact"><span class="fk">Tokens</span><span class="fv">50M + 50M</span></div><div class="fact"><span class="fk">Checks</span><span class="fv">17/17 pass</span></div></div>
+</header>
+
+<section class="grp">
+  <h2><span class="gtag">The task</span><span class="gname">What we were asked to do</span></h2>
+  <div class="body">
+    <p>Train a dense ("linear") model, convert it into a mixture of experts, and show that the MoE continues to train and
+    reduce its loss. Model size and data were our call.</p>
+    <p>The design choice that shapes every cell below: the MoE does <b>the same work per token</b> as the dense model
+    (4 experts of 320 neurons = one FFN of 1,280) while storing <b>eight times</b> the FFN parameters. So any gain it shows
+    comes from the extra parameters, which is the lesson's central claim about MoE.</p>
+  </div>
+  <div class="tablewrap"><table><tbody><tr><td class="tk">T1</td><td class="tn">train dense</td><td>R1: validation 9.0792 &rarr; 4.1230 on 50M FineWeb tokens</td></tr><tr><td class="tk">T2</td><td class="tn">convert</td><td>32 experts per layer from R1's FFNs; same function (fp64 1.3e-14); same work per token</td></tr><tr><td class="tk">T3</td><td class="tn">keep training</td><td>MoE 4.1230 &rarr; <b>3.7932</b> over 50M more tokens, no dead experts</td></tr><tr><td class="tk">vs</td><td class="tn">dense</td><td>fair control R2s 3.8268 (-0.0336); ordinary dense R2 3.7757 (+0.0175)</td></tr></tbody></table></div>
+  <div class="callout">
+    <h4>How to read this</h4>
+    <p>Each cell of the final notebook (v3) is below: what it does, what goes in and comes out, its full source in a
+    collapsed block, and what it printed on the T4. Every code block is the code that ran and every output block is what it
+    printed; nothing is retyped. Cells 14&ndash;17 are the experiments that found the fix; they are switched off in v3 and
+    their results are summarised in the text.</p>
+  </div>
+</section>
+<section class="grp"><h2><span class="gtag">Cells 1 &ndash; 3</span><span class="gname">Ground the run stands on</span></h2><article class="cell"><h3>Cell 1 &middot; Environment, and which run this is</h3><div class="body"><p>Imports, a fixed seed (1337) and a decision about the <b>profile</b>: <code>full</code> on a GPU, <code>smoke</code> for a quick GPU check, or <code>cpu</code>, a tiny version used to test the notebook on a laptop. A CPU run prints a loud banner so its numbers can never be mistaken for the experiment.</p><p>The T4 has no fast bf16, so the heavy work runs in <b>fp16 with a loss scaler</b>. Everything that must stay exact (the router, the conversion gates) opts out of fp16 explicitly further down.</p></div><p class="io"><b>Inputs:</b> none. <b>Outputs:</b> <code>DEVICE</code>, <code>PROFILE</code>, <code>AMP</code>, the results dictionary <code>R</code>.</p><details class="src"><summary>Show the full cell source &mdash; 74 lines</summary><pre class="code"><span class="k">import</span> sys, subprocess
+
+<span class="k">def</span> _pip(mod, pkg=<span class="k">None</span>):
+    <span class="s">&quot;&quot;&quot;Install only if the import actually fails - Colab already has most of this.&quot;&quot;&quot;</span>
+    <span class="k">try</span>:
+        __import__(mod)
+    <span class="k">except</span> ImportError:
+        subprocess.run([sys.executable, <span class="s">&quot;-m&quot;</span>, <span class="s">&quot;pip&quot;</span>, <span class="s">&quot;install&quot;</span>, <span class="s">&quot;-q&quot;</span>, pkg <span class="k">or</span> mod], check=<span class="k">False</span>)
+
+_pip(<span class="s">&quot;tokenizers&quot;</span>)
+_pip(<span class="s">&quot;datasets&quot;</span>)
+
+<span class="k">import</span> os, math, time, json, zipfile, random, platform, hashlib, inspect, io
+<span class="k">from</span> contextlib <span class="k">import</span> redirect_stdout, nullcontext
+<span class="k">from</span> dataclasses <span class="k">import</span> dataclass, asdict, replace
+
+<span class="k">try</span>:
+    sys.stdout.reconfigure(encoding=<span class="s">&quot;utf-8&quot;</span>)   <span class="c"># Windows consoles default to cp1252</span>
+<span class="k">except</span> Exception:
+    <span class="k">pass</span>
+
+<span class="k">import</span> numpy <span class="k">as</span> np
+<span class="k">import</span> torch
+<span class="k">import</span> torch.nn <span class="k">as</span> nn
+<span class="k">import</span> torch.nn.functional <span class="k">as</span> F
+<span class="k">from</span> torch.utils.checkpoint <span class="k">import</span> checkpoint
+<span class="k">import</span> matplotlib
+matplotlib.use(<span class="s">&quot;Agg&quot;</span>)
+<span class="k">import</span> matplotlib.pyplot <span class="k">as</span> plt
+
+NOTEBOOK_VERSION = <span class="s">&quot;v3&quot;</span>
+SEED = 1337
+torch.manual_seed(SEED); np.random.seed(SEED); random.seed(SEED)
+
+<span class="c"># ┌──────────────────────────────────────────────────────────────────────────────────────┐</span>
+<span class="c"># │ MODE: &quot;full&quot; is the experiment. &quot;smoke&quot; runs the real model on ~2M tokens per run to   │</span>
+<span class="c"># │ check every GPU code path in a few minutes (plus the one-time data preparation).       │</span>
+<span class="c"># └──────────────────────────────────────────────────────────────────────────────────────┘</span>
+MODE = <span class="s">&quot;full&quot;</span>
+
+DEVICE = <span class="s">&quot;cuda&quot;</span> <span class="k">if</span> torch.cuda.is_available() <span class="k">else</span> <span class="s">&quot;cpu&quot;</span>
+PROFILE = os.environ.get(<span class="s">&quot;ERA5_PROFILE&quot;</span>) <span class="k">or</span> (MODE <span class="k">if</span> DEVICE == <span class="s">&quot;cuda&quot;</span> <span class="k">else</span> <span class="s">&quot;cpu&quot;</span>)
+AMP = DEVICE == <span class="s">&quot;cuda&quot;</span>                  <span class="c"># fp16 autocast + loss scaling (a T4 has no bf16)</span>
+AMP_DTYPE = torch.float16
+
+<span class="k">if</span> DEVICE == <span class="s">&quot;cuda&quot;</span>:
+    _p = torch.cuda.get_device_properties(0)
+    GPU_NAME, VRAM_GB = _p.name, _p.total_memory / 1e9
+<span class="k">else</span>:
+    GPU_NAME, VRAM_GB = <span class="k">None</span>, 0.0
+
+_BANNER = [f&quot;NOTEBOOK {NOTEBOOK_VERSION}  -  Session 14, dense model to mixture of experts&quot;,
+           f&quot;profile: {PROFILE}   device: {DEVICE}&quot; + (f&quot;   gpu: {GPU_NAME}&quot; <span class="k">if</span> GPU_NAME <span class="k">else</span> <span class="s">&quot;&quot;</span>)]
+<span class="k">if</span> PROFILE == <span class="s">&quot;cpu&quot;</span>:
+    _BANNER += [<span class="s">&quot;&quot;</span>, <span class="s">&quot;!! REDUCED PROFILE: tiny model, tiny data.&quot;</span>,
+                <span class="s">&quot;!! Use it to test the notebook. None of these numbers are the experiment.&quot;</span>]
+<span class="k">elif</span> PROFILE == <span class="s">&quot;smoke&quot;</span>:
+    _BANNER += [<span class="s">&quot;&quot;</span>, <span class="s">&quot;SMOKE TEST: real model and data, ~2M tokens per run.&quot;</span>,
+                <span class="s">&quot;Checks every GPU code path. Set MODE = \&quot;full\&quot; afterwards for the experiment.&quot;</span>]
+_w = max(len(x) <span class="k">for</span> x <span class="k">in</span> _BANNER) + 4
+print(<span class="s">&quot;+&quot;</span> + <span class="s">&quot;-&quot;</span> * _w + <span class="s">&quot;+&quot;</span>)
+<span class="k">for</span> _line <span class="k">in</span> _BANNER:
+    print(<span class="s">&quot;|  &quot;</span> + _line.ljust(_w - 2) + <span class="s">&quot;|&quot;</span>)
+print(<span class="s">&quot;+&quot;</span> + <span class="s">&quot;-&quot;</span> * _w + <span class="s">&quot;+\n&quot;</span>)
+print(f&quot;python : {platform.python_version()}&quot;)
+print(f&quot;torch  : {torch.__version__}&quot;)
+<span class="k">if</span> GPU_NAME:
+    print(f&quot;gpu    : {GPU_NAME}, {VRAM_GB:.1f} GB&quot;)
+
+R = {<span class="s">&quot;meta&quot;</span>: {<span class="s">&quot;notebook_version&quot;</span>: NOTEBOOK_VERSION, <span class="s">&quot;torch&quot;</span>: torch.__version__,
+              <span class="s">&quot;python&quot;</span>: platform.python_version(), <span class="s">&quot;seed&quot;</span>: SEED, <span class="s">&quot;device&quot;</span>: DEVICE,
+              <span class="s">&quot;profile&quot;</span>: PROFILE, <span class="s">&quot;gpu&quot;</span>: GPU_NAME, <span class="s">&quot;vram_gb&quot;</span>: VRAM_GB,
+              <span class="s">&quot;started&quot;</span>: time.strftime(<span class="s">&quot;%Y-%m-%d %H:%M:%S&quot;</span>)},
+     <span class="s">&quot;gates&quot;</span>: {}}</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">+-----------------------------------------------------------------+
+|  NOTEBOOK v3  -  Session 14, dense model to mixture of experts  |
+|  profile: full   device: cuda   gpu: Tesla T4                   |
++-----------------------------------------------------------------+
+
+python : 3.13.15
+torch  : 2.11.0+cu128
+gpu    : Tesla T4, 15.6 GB</pre></div><p class="outnote">Tesla T4, torch 2.11, profile <code>full</code>: this is the real run.</p></article><article class="cell"><h3>Cell 2 &middot; One place for every number that shapes the run</h3><div class="body"><p>Session 13's model and optimiser settings, reused because you approved them: 16 layers of width 320, a GELU feed-forward network (FFN) of 1,280 neurons, vocabulary 8,192, batch 32 &times; 512, learning rate 1e-3.</p><p>Two things are new. The schedule is <b>warmup-stable-decay</b>: 200 steps up, then flat, and lowered only in the last 20% of the continuation runs. R1 never decays, so the conversion happens while the model can still learn fast. And the data is twice as long, 100.5M tokens, so the continuations never repeat a sentence R1 saw.</p><p>The breakdown it prints matters for everything after it: <b>58% of the parameters are in the FFN layers</b>, and that is exactly the part the MoE multiplies.</p></div><p class="io"><b>Inputs:</b> the profile. <b>Outputs:</b> <code>MC</code>, <code>TC</code>, <code>DC</code>, <code>STEPS</code> = 3,051, the parameter breakdown.</p><details class="src"><summary>Show the full cell source &mdash; 63 lines</summary><pre class="code">@dataclass(frozen=<span class="k">True</span>)
+<span class="k">class</span> ModelCfg:
+    vocab: int = 8192
+    d: int = 320            <span class="c"># width: how many numbers carry one token between layers</span>
+    n_layer: int = 16       <span class="c"># depth</span>
+    n_head: int = 5         <span class="c"># 320 = 5 heads x 64</span>
+    seq: int = 512
+    mlp_mult: int = 4       <span class="c"># feed-forward middle = 4 x width = 1,280 neurons</span>
+
+@dataclass(frozen=<span class="k">True</span>)
+<span class="k">class</span> TrainCfg:
+    tokens: int = 50_000_000        <span class="c"># per run: R1, R2 and R3 each read 50M tokens</span>
+    batch: int = 32
+    lr: float = 1e-3
+    min_lr_frac: float = 0.1        <span class="c"># where the decay ends, as a fraction of lr</span>
+    warmup_steps: int = 200
+    decay_frac: float = 0.2         <span class="c"># R2 and R3 decay over their last 20%; R1 never decays</span>
+    weight_decay: float = 0.1
+    beta2: float = 0.95
+    grad_clip: float = 1.0
+    eval_every_tokens: int = 2_500_000
+    eval_batches: int = 20          <span class="c"># 20 x 32 sequences of 512 = 327k validation tokens</span>
+    log_every: int = 25
+    loss_chunk: int = 8192          <span class="c"># tokens per slice of the chunked loss</span>
+    ckpt_minutes: float = 8.0
+
+@dataclass(frozen=<span class="k">True</span>)
+<span class="k">class</span> DataCfg:
+    train_tokens: int = 100_500_000  <span class="c"># R1&#x27;s 50M, then the continuations&#x27; 50M, plus a margin</span>
+    val_tokens: int = 1_000_000
+    tokenizer_chars: int = 40_000_000
+    fineweb_name: str = <span class="s">&quot;sample-10BT&quot;</span>
+
+MC, TC, DC = ModelCfg(), TrainCfg(), DataCfg()
+<span class="k">if</span> PROFILE == <span class="s">&quot;cpu&quot;</span>:
+    MC = replace(MC, vocab=1024, d=64, n_layer=4, n_head=4, seq=128)
+    TC = replace(TC, tokens=300_000, batch=8, warmup_steps=20, eval_every_tokens=75_000,
+                 eval_batches=4, log_every=10, loss_chunk=512)
+    DC = replace(DC, train_tokens=650_000, val_tokens=40_000, tokenizer_chars=1_000_000)
+<span class="k">elif</span> PROFILE == <span class="s">&quot;smoke&quot;</span>:
+    TC = replace(TC, tokens=2_000_000, warmup_steps=20, eval_every_tokens=500_000, eval_batches=5)
+TC = replace(TC, ckpt_minutes=float(os.environ.get(<span class="s">&quot;ERA5_CKPT_MIN&quot;</span>, TC.ckpt_minutes)))
+
+STEPS = TC.tokens // (TC.batch * MC.seq)          <span class="c"># optimiser steps per run</span>
+
+<span class="k">def</span> param_breakdown(mc=MC):
+    <span class="s">&quot;&quot;&quot;Where the dense model&#x27;s weights live (the output layer shares the embedding).&quot;&quot;&quot;</span>
+    emb = mc.vocab * mc.d + mc.seq * mc.d
+    attn = mc.n_layer * 4 * mc.d * mc.d
+    ffn = mc.n_layer * 2 * mc.d * (mc.mlp_mult * mc.d)
+    norms = mc.n_layer * 4 * mc.d + 2 * mc.d
+    <span class="k">return</span> {<span class="s">&quot;embeddings&quot;</span>: emb, <span class="s">&quot;attention&quot;</span>: attn, <span class="s">&quot;feed-forward&quot;</span>: ffn, <span class="s">&quot;layer norms&quot;</span>: norms,
+            <span class="s">&quot;total&quot;</span>: emb + attn + ffn + norms}
+
+PB = param_breakdown()
+print(f&quot;model   : {MC.n_layer} layers x width {MC.d}, {MC.n_head} heads, FFN {MC.mlp_mult*MC.d} neurons, &quot;
+      f&quot;vocab {MC.vocab:,}, sequence {MC.seq}&quot;)
+<span class="k">for</span> k, v <span class="k">in</span> PB.items():
+    print(f&quot;          {k:&lt;13} {v/1e6:6.2f}M&quot; + (<span class="s">&quot;&quot;</span> <span class="k">if</span> k == <span class="s">&quot;total&quot;</span> <span class="k">else</span> f&quot;  ({v/PB[<span class="s">&#x27;total&#x27;</span>]*100:4.1f}%)&quot;))
+print(f&quot;training: {TC.tokens/1e6:.1f}M tokens per run, batch {TC.batch} x {MC.seq} &quot;
+      f&quot;-&gt; {STEPS:,} steps; lr {TC.lr}, warm-up {TC.warmup_steps} steps, &quot;
+      f&quot;decay over the last {TC.decay_frac:.0%} of R2/R3 only&quot;)
+R[<span class="s">&quot;config&quot;</span>] = {<span class="s">&quot;model&quot;</span>: asdict(MC), <span class="s">&quot;train&quot;</span>: asdict(TC), <span class="s">&quot;data&quot;</span>: asdict(DC), <span class="s">&quot;params&quot;</span>: PB, <span class="s">&quot;steps&quot;</span>: STEPS}</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">model   : 16 layers x width 320, 5 heads, FFN 1280 neurons, vocab 8,192, sequence 512
+          embeddings      2.79M  (12.4%)
+          attention       6.55M  (29.2%)
+          feed-forward   13.11M  (58.3%)
+          layer norms     0.02M  ( 0.1%)
+          total          22.47M
+training: 50.0M tokens per run, batch 32 x 512 -&gt; 3,051 steps; lr 0.001, warm-up 200 steps, decay over the last 20% of R2/R3 only</pre></div><p class="outnote">Every run afterwards uses these numbers; none is set inside a later cell.</p></article><article class="cell"><h3>Cell 3 &middot; Storage that survives a disconnect, and refuses to run without it</h3><div class="body"><p>Everything that must outlive the runtime goes to Google Drive: the tokenised data, every finished run, the checkpoints and <code>outputs/</code>. A finished run is recognised by a hash of its settings <b>and of the source code that produced it</b>, but not of the notebook version, so moving from v1 to v3 replays R1 instead of retraining it.</p><p><b>The cell's hardest lesson.</b> In v2.1 and v2.2 the Drive mount failed with a <code>ValueError</code>, and the notebook fell back to the runtime's temporary disk. It printed a warning and carried on, so it quietly rebuilt the data and retrained R1 twice. v3 prints the full error, retries once with a forced remount, and <b>stops</b> (<code>REQUIRE_DRIVE = True</code>): losing an 80-minute run to a disconnect would be worse.</p></div><p class="io"><b>Inputs:</b> the Colab runtime. <b>Outputs:</b> <code>ROOT</code>, <code>OUT_DIR</code>, <code>CACHE_DIR</code>, <code>BASE_KEY</code>, <code>_src_hash()</code>.</p><details class="src"><summary>Show the full cell source &mdash; 76 lines</summary><pre class="code">RESET_CACHE = <span class="k">False</span>        <span class="c"># True forces every run to recompute</span>
+
+<span class="k">try</span>:
+    <span class="k">from</span> google.colab <span class="k">import</span> drive <span class="k">as</span> _colab_drive
+    IN_COLAB = <span class="k">True</span>
+<span class="k">except</span> ImportError:
+    IN_COLAB = <span class="k">False</span>
+
+REQUIRE_DRIVE = <span class="k">True</span>       <span class="c"># v3: stop here if Drive does not mount (a disconnect would lose the long runs)</span>
+
+DRIVE_OK = <span class="k">False</span>
+<span class="k">if</span> IN_COLAB:
+    _err = <span class="k">None</span>
+    <span class="k">for</span> _force <span class="k">in</span> (<span class="k">False</span>, <span class="k">True</span>):             <span class="c"># one retry with a forced remount</span>
+        <span class="k">try</span>:
+            _colab_drive.mount(<span class="s">&quot;/content/drive&quot;</span>, force_remount=_force)
+            ROOT, DRIVE_OK = <span class="s">&quot;/content/drive/MyDrive/era5_session14&quot;</span>, <span class="k">True</span>
+            <span class="k">break</span>
+        <span class="k">except</span> Exception <span class="k">as</span> e:
+            _err = e
+            print(f&quot;Drive mount attempt {<span class="s">&#x27;2 (forced)&#x27;</span> <span class="k">if</span> _force <span class="k">else</span> <span class="s">&#x27;1&#x27;</span>} failed: {type(e).__name__}: {e}&quot;)
+    <span class="k">if</span> <span class="k">not</span> DRIVE_OK:
+        ROOT = <span class="s">&quot;/content/era5_session14&quot;</span>
+        print(<span class="s">&quot;!&quot;</span> * 74)
+        print(f&quot;!! DRIVE MOUNT FAILED ({type(_err).__name__}: {_err}).&quot;)
+        print(<span class="s">&quot;!! Without Drive, R1 is retrained and a disconnect loses every finished run.&quot;</span>)
+        print(<span class="s">&quot;!! Fix: Runtime -&gt; Disconnect and delete runtime, then Run all again, and in the&quot;</span>)
+        print(<span class="s">&quot;!! Google pop-up choose the SAME account as before and allow access.&quot;</span>)
+        print(<span class="s">&quot;!&quot;</span> * 74)
+        <span class="k">if</span> REQUIRE_DRIVE:
+            <span class="k">raise</span> RuntimeError(<span class="s">&quot;Drive is not mounted (REQUIRE_DRIVE = True). See the message above; &quot;</span>
+                               <span class="s">&quot;set REQUIRE_DRIVE = False only if you accept losing the runs on a disconnect.&quot;</span>)
+    OUT_DIR, CACHE_DIR = os.path.join(ROOT, <span class="s">&quot;outputs&quot;</span>), os.path.join(ROOT, <span class="s">&quot;cache&quot;</span>)
+<span class="k">else</span>:
+    ROOT, OUT_DIR, CACHE_DIR = <span class="s">&quot;.&quot;</span>, <span class="s">&quot;outputs&quot;</span>, <span class="s">&quot;checkpoints&quot;</span>
+DATA_DIR = os.path.join(CACHE_DIR, <span class="s">&quot;data_&quot;</span> + hashlib.sha1(
+    json.dumps({<span class="s">&quot;d&quot;</span>: asdict(DC), <span class="s">&quot;v&quot;</span>: MC.vocab}, sort_keys=<span class="k">True</span>).encode()).hexdigest()[:8])
+<span class="k">if</span> PROFILE != <span class="s">&quot;full&quot;</span>:                     <span class="c"># smoke and CPU results never mix with the real ones</span>
+    OUT_DIR = os.path.join(OUT_DIR, PROFILE)
+    CACHE_DIR = os.path.join(CACHE_DIR, PROFILE)
+LOG_DIR = os.path.join(OUT_DIR, <span class="s">&quot;logs&quot;</span>)
+<span class="k">for</span> _d <span class="k">in</span> (OUT_DIR, CACHE_DIR, DATA_DIR, LOG_DIR):
+    os.makedirs(_d, exist_ok=<span class="k">True</span>)
+
+<span class="k">def</span> out(name):   <span class="k">return</span> os.path.join(OUT_DIR, name)
+<span class="k">def</span> cache(name): <span class="k">return</span> os.path.join(CACHE_DIR, name)
+
+<span class="k">def</span> _h(obj):
+    <span class="k">return</span> hashlib.sha1(json.dumps(obj, sort_keys=<span class="k">True</span>, default=str).encode()).hexdigest()[:10]
+
+BASE_KEY = _h({<span class="s">&quot;model&quot;</span>: asdict(MC), <span class="s">&quot;train&quot;</span>: {k: v <span class="k">for</span> k, v <span class="k">in</span> asdict(TC).items() <span class="k">if</span> k != <span class="s">&quot;ckpt_minutes&quot;</span>},
+               <span class="s">&quot;data&quot;</span>: asdict(DC), <span class="s">&quot;seed&quot;</span>: SEED, <span class="s">&quot;device&quot;</span>: DEVICE, <span class="s">&quot;profile&quot;</span>: PROFILE})
+
+<span class="k">def</span> _src_hash(*objs):
+    <span class="s">&quot;&quot;&quot;Hash of the SOURCE of the functions and classes a cached result depends on.&quot;&quot;&quot;</span>
+    parts = []
+    <span class="k">for</span> o <span class="k">in</span> objs:
+        <span class="k">try</span>:
+            parts.append(inspect.getsource(o))
+        <span class="k">except</span> (OSError, TypeError):
+            parts.append(<span class="s">&quot;&quot;</span>)
+    <span class="k">return</span> hashlib.sha1(<span class="s">&quot;&quot;</span>.join(parts).encode()).hexdigest()[:10]
+
+<span class="k">def</span> _atomic_save(obj, path, as_json=<span class="k">False</span>):
+    tmp = path + <span class="s">&quot;.tmp&quot;</span>
+    <span class="k">if</span> as_json:
+        <span class="k">with</span> open(tmp, <span class="s">&quot;w&quot;</span>, encoding=<span class="s">&quot;utf-8&quot;</span>) <span class="k">as</span> f:
+            json.dump(obj, f, indent=1, default=float)
+    <span class="k">else</span>:
+        torch.save(obj, tmp)
+    os.replace(tmp, path)
+
+print(f&quot;in colab   : {IN_COLAB}  (drive mounted: {DRIVE_OK})&quot;)
+print(f&quot;outputs    : {OUT_DIR}   &lt;- download this folder&quot;)
+print(f&quot;cache      : {CACHE_DIR}   &lt;- R1&#x27;s checkpoint lives here; keep it for v2 and v3&quot;)
+print(f&quot;base key   : {BASE_KEY}&quot;)</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">Mounted at /content/drive
+in colab   : True  (drive mounted: True)
+outputs    : /content/drive/MyDrive/era5_session14/outputs   &lt;- download this folder
+cache      : /content/drive/MyDrive/era5_session14/cache   &lt;- R1&#x27;s checkpoint lives here; keep it for v2 and v3
+base key   : e584d66077</pre></div><p class="outnote">"drive mounted: True": the mount worked on this run, so everything below reloads from Drive.</p></article></section><section class="grp"><h2><span class="gtag">Cells 4 &ndash; 6</span><span class="gname">The data, the dense model, the loop</span></h2><article class="cell"><h3>Cell 4 &middot; Web pages to two files of token ids</h3><div class="body"><p>Streams FineWeb (sample-10BT), keeps the first documents aside as validation text, trains an 8,192-token byte-pair tokenizer on the next 40M characters, and tokenises 100.5M training tokens and 1M validation tokens into flat files.</p><p>The training file is cut into windows of 513 tokens and shuffled once with a fixed seed. <b>R1 reads the first 97,632 windows; R2, R2s and R3 all read the next 97,632, in the same order.</b> So the three continuations see exactly the same new text, and none of it was in R1's training data.</p></div><p class="io"><b>Inputs:</b> FineWeb, streamed. <b>Outputs:</b> <code>train.bin</code>, <code>val.bin</code>, <code>TOK</code>, <code>TRAIN_W</code>, <code>VAL_W</code>, <code>CONT_START</code>.</p><details class="src"><summary>Show the full cell source &mdash; 145 lines</summary><pre class="code"><span class="k">from</span> tokenizers <span class="k">import</span> Tokenizer, models, trainers, pre_tokenizers, decoders
+
+EOT = <span class="s">&quot;&lt;|eot|&gt;&quot;</span>
+
+<span class="k">def</span> _fineweb_texts():
+    <span class="k">from</span> datasets <span class="k">import</span> load_dataset
+    ds = load_dataset(<span class="s">&quot;HuggingFaceFW/fineweb&quot;</span>, name=DC.fineweb_name, split=<span class="s">&quot;train&quot;</span>,
+                      streaming=<span class="k">True</span>)
+    <span class="k">for</span> row <span class="k">in</span> ds:
+        <span class="k">yield</span> row[<span class="s">&quot;text&quot;</span>]
+
+<span class="k">def</span> _fallback_texts():
+    <span class="s">&quot;&quot;&quot;Only used by the CPU profile when the FineWeb stream is unreachable.&quot;&quot;&quot;</span>
+    <span class="k">import</span> urllib.request
+    url = <span class="s">&quot;https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt&quot;</span>
+    path = os.path.join(DATA_DIR, <span class="s">&quot;tinyshakespeare.txt&quot;</span>)
+    <span class="k">if</span> <span class="k">not</span> os.path.exists(path):
+        urllib.request.urlretrieve(url, path)
+    text = open(path, encoding=<span class="s">&quot;utf-8&quot;</span>).read()
+    <span class="k">for</span> _ <span class="k">in</span> range(40):                      <span class="c"># small corpus: repeat it (CPU profile only)</span>
+        <span class="k">for</span> block <span class="k">in</span> text.split(<span class="s">&quot;\n\n&quot;</span>):
+            <span class="k">if</span> len(block) &gt; 64:
+                <span class="k">yield</span> block
+
+<span class="k">def</span> build_data():
+    meta_path = os.path.join(DATA_DIR, <span class="s">&quot;meta.json&quot;</span>)
+    want = {<span class="s">&quot;data&quot;</span>: asdict(DC), <span class="s">&quot;vocab&quot;</span>: MC.vocab}
+    <span class="k">if</span> os.path.exists(meta_path):
+        meta = json.load(open(meta_path, encoding=<span class="s">&quot;utf-8&quot;</span>))
+        <span class="k">if</span> meta.get(<span class="s">&quot;want&quot;</span>) == want:
+            print(f&quot;[cached] tokenised data found in {DATA_DIR}&quot;)
+            <span class="k">return</span> meta
+    t0 = time.time()
+    source = <span class="s">&quot;fineweb&quot;</span>
+    <span class="k">try</span>:
+        stream = _fineweb_texts()
+        first = next(stream)
+    <span class="k">except</span> Exception <span class="k">as</span> e:
+        <span class="k">if</span> PROFILE != <span class="s">&quot;cpu&quot;</span>:
+            <span class="k">raise</span>
+        print(f&quot;FineWeb unreachable ({type(e).__name__}); CPU profile falls back to Tiny Shakespeare&quot;)
+        source, stream = <span class="s">&quot;tinyshakespeare&quot;</span>, _fallback_texts()
+        first = next(stream)
+
+    <span class="k">def</span> docs():
+        <span class="k">yield</span> first
+        <span class="k">yield</span> <span class="k">from</span> stream
+
+    it = docs()
+    <span class="c"># 1) validation documents first, kept aside as raw text (6 chars per token is generous)</span>
+    val_texts, n = [], 0
+    <span class="k">for</span> t <span class="k">in</span> it:
+        val_texts.append(t); n += len(t)
+        <span class="k">if</span> n &gt;= DC.val_tokens * 6:
+            <span class="k">break</span>
+    <span class="c"># 2) the tokenizer is trained on the next documents, which also start the training set</span>
+    tok_texts, n = [], 0
+    <span class="k">for</span> t <span class="k">in</span> it:
+        tok_texts.append(t); n += len(t)
+        <span class="k">if</span> n &gt;= DC.tokenizer_chars:
+            <span class="k">break</span>
+    print(f&quot;source {source}: {len(val_texts):,} validation docs, {len(tok_texts):,} docs &quot;
+          f&quot;({sum(len(x) <span class="k">for</span> x <span class="k">in</span> tok_texts)/1e6:.1f}M chars) for the tokenizer&quot;)
+
+    tok = Tokenizer(models.BPE())
+    tok.pre_tokenizer = pre_tokenizers.ByteLevel(add_prefix_space=<span class="k">False</span>)
+    tok.decoder = decoders.ByteLevel()
+    trainer = trainers.BpeTrainer(vocab_size=MC.vocab, special_tokens=[EOT], min_frequency=2,
+                                  initial_alphabet=pre_tokenizers.ByteLevel.alphabet())
+    tok.train_from_iterator(tok_texts, trainer=trainer)
+    tok.save(os.path.join(DATA_DIR, <span class="s">&quot;tokenizer.json&quot;</span>))
+    eot = tok.token_to_id(EOT)
+    print(f&quot;tokenizer trained: vocabulary {tok.get_vocab_size():,} in {time.time()-t0:.0f}s&quot;)
+
+    <span class="k">def</span> encode_to(texts_iter, limit, path):
+        chunks, n, chars, batch = [], 0, 0, []
+        <span class="k">def</span> flush(batch):
+            <span class="k">nonlocal</span> n, chars
+            enc = tok.encode_batch(batch)
+            <span class="k">for</span> e, t <span class="k">in</span> zip(enc, batch):
+                ids = np.asarray(e.ids + [eot], dtype=np.uint16)
+                chunks.append(ids); n += len(ids); chars += len(t)
+        <span class="k">for</span> t <span class="k">in</span> texts_iter:
+            batch.append(t)
+            <span class="k">if</span> len(batch) == 512:
+                flush(batch); batch = []
+                <span class="k">if</span> n &gt;= limit:
+                    <span class="k">break</span>
+        <span class="k">if</span> batch <span class="k">and</span> n &lt; limit:
+            flush(batch)
+        arr = np.concatenate(chunks)[:limit]
+        <span class="k">if</span> len(arr) &lt; limit:
+            <span class="k">raise</span> RuntimeError(f&quot;only {len(arr):,} tokens available for {path}, wanted {limit:,}&quot;)
+        arr.tofile(path)
+        <span class="k">return</span> len(arr), chars / max(n, 1)
+
+    n_val, _ = encode_to(iter(val_texts), DC.val_tokens, os.path.join(DATA_DIR, <span class="s">&quot;val.bin&quot;</span>))
+    <span class="k">def</span> train_iter():
+        <span class="k">yield</span> <span class="k">from</span> tok_texts
+        <span class="k">yield</span> <span class="k">from</span> it
+    n_tr, cpt = encode_to(train_iter(), DC.train_tokens, os.path.join(DATA_DIR, <span class="s">&quot;train.bin&quot;</span>))
+    meta = {<span class="s">&quot;want&quot;</span>: want, <span class="s">&quot;source&quot;</span>: source, <span class="s">&quot;train_tokens&quot;</span>: n_tr, <span class="s">&quot;val_tokens&quot;</span>: n_val,
+            <span class="s">&quot;chars_per_token&quot;</span>: cpt, <span class="s">&quot;eot_id&quot;</span>: eot, <span class="s">&quot;vocab_size&quot;</span>: tok.get_vocab_size(),
+            <span class="s">&quot;seconds&quot;</span>: time.time() - t0}
+    _atomic_save(meta, meta_path, as_json=<span class="k">True</span>)
+    print(f&quot;data prepared in {meta[<span class="s">&#x27;seconds&#x27;</span>]/60:.1f} min&quot;)
+    <span class="k">return</span> meta
+
+DATA_META = build_data()
+TOK = Tokenizer.from_file(os.path.join(DATA_DIR, <span class="s">&quot;tokenizer.json&quot;</span>))
+TRAIN = np.memmap(os.path.join(DATA_DIR, <span class="s">&quot;train.bin&quot;</span>), dtype=np.uint16, mode=<span class="s">&quot;r&quot;</span>)
+VAL = np.memmap(os.path.join(DATA_DIR, <span class="s">&quot;val.bin&quot;</span>), dtype=np.uint16, mode=<span class="s">&quot;r&quot;</span>)
+<span class="k">assert</span> DATA_META[<span class="s">&quot;vocab_size&quot;</span>] &lt;= MC.vocab
+
+<span class="k">class</span> Windows:
+    <span class="s">&quot;&quot;&quot;Fixed windows of seq+1 tokens in a fixed shuffled order. Window k is always the same.&quot;&quot;&quot;</span>
+    <span class="k">def</span> __init__(self, data, seq, shuffle, seed=SEED):
+        self.data, self.seq = data, seq
+        n = (len(data) - 1) // seq
+        self.order = np.random.default_rng(seed).permutation(n) <span class="k">if</span> shuffle <span class="k">else</span> np.arange(n)
+    <span class="k">def</span> __len__(self):
+        <span class="k">return</span> len(self.order)
+    <span class="k">def</span> get(self, start, count, device=DEVICE):
+        idx = self.order[start:start + count]
+        x = np.stack([self.data[i * self.seq: i * self.seq + self.seq + 1] <span class="k">for</span> i <span class="k">in</span> idx]).astype(np.int64)
+        x = torch.from_numpy(x)
+        <span class="k">if</span> device == <span class="s">&quot;cuda&quot;</span>:
+            x = x.pin_memory().to(device, non_blocking=<span class="k">True</span>)
+        <span class="k">return</span> x[:, :-1], x[:, 1:]
+
+TRAIN_W = Windows(TRAIN, MC.seq, shuffle=<span class="k">True</span>)
+VAL_W = Windows(VAL, MC.seq, shuffle=<span class="k">False</span>)
+R1_WINDOWS = STEPS * TC.batch                    <span class="c"># R1 reads windows [0, R1_WINDOWS)</span>
+CONT_START = R1_WINDOWS                          <span class="c"># R2 and R3 read [R1_WINDOWS, 2 x R1_WINDOWS)</span>
+<span class="k">assert</span> 2 * R1_WINDOWS &lt;= len(TRAIN_W), <span class="s">&quot;not enough training windows for R1 plus the continuations&quot;</span>
+_sample = <span class="s">&quot;A mixture of experts runs only a few small networks for each token.&quot;</span>
+_enc = TOK.encode(_sample)
+print(f&quot;source           : {DATA_META[<span class="s">&#x27;source&#x27;</span>]}&quot;)
+print(f&quot;training tokens  : {len(TRAIN):,}  ({len(TRAIN_W):,} windows of {MC.seq}+1)&quot;)
+print(f&quot;  R1 reads       : windows 0 .. {R1_WINDOWS-1:,}  ({R1_WINDOWS*MC.seq/1e6:.1f}M tokens)&quot;)
+print(f&quot;  R2, R3 read    : windows {CONT_START:,} .. {2*R1_WINDOWS-1:,}  (the next {R1_WINDOWS*MC.seq/1e6:.1f}M)&quot;)
+print(f&quot;validation tokens: {len(VAL):,}  (separate documents)&quot;)
+print(f&quot;chars per token  : {DATA_META[<span class="s">&#x27;chars_per_token&#x27;</span>]:.2f}&quot;)
+print(f&quot;round trip       : {len(_enc.ids)} tokens -&gt; {TOK.decode(_enc.ids)!r}&quot;)
+R[<span class="s">&quot;data&quot;</span>] = {k: DATA_META[k] <span class="k">for</span> k <span class="k">in</span> (<span class="s">&quot;source&quot;</span>, <span class="s">&quot;train_tokens&quot;</span>, <span class="s">&quot;val_tokens&quot;</span>, <span class="s">&quot;chars_per_token&quot;</span>, <span class="s">&quot;vocab_size&quot;</span>)}</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">[cached] tokenised data found in /content/drive/MyDrive/era5_session14/cache/data_7367d347
+source           : fineweb
+training tokens  : 100,500,000  (196,289 windows of 512+1)
+  R1 reads       : windows 0 .. 97,631  (50.0M tokens)
+  R2, R3 read    : windows 97,632 .. 195,263  (the next 50.0M)
+validation tokens: 1,000,000  (separate documents)
+chars per token  : 3.73
+round trip       : 17 tokens -&gt; &#x27;A mixture of experts runs only a few small networks for each token.&#x27;</pre></div><p class="outnote">"[cached]": prepared once in v1 (4.6 minutes) and reloaded from Drive ever since.</p></article><article class="cell"><h3>Cell 5 &middot; The dense model, frozen after v1</h3><div class="body"><p>A small GPT: token and position embeddings, 16 pre-norm blocks of attention then FFN, a final norm, and an output layer that shares the embedding matrix. The loss is computed in slices of 8,192 tokens and recomputed in the backward pass, so the full score table over the vocabulary never sits in memory at once.</p><p>The FFN is its own module, <code>block.mlp</code>, with two plain matrices (<code>up</code>, <code>down</code>). That one design choice is what makes the whole assignment possible without touching this cell again: the converter later <b>replaces</b> <code>block.mlp</code> with an MoE layer, and the rest of the model never knows.</p></div><p class="io"><b>Inputs:</b> <code>MC</code>. <b>Outputs:</b> <code>GPT</code>, <code>Block</code>, <code>MLP</code>, <code>chunked_ce</code>, <code>make_dense()</code>.</p><details class="src"><summary>Show the full cell source &mdash; 88 lines</summary><pre class="code"><span class="k">class</span> Attention(nn.Module):
+    <span class="k">def</span> __init__(self, mc):
+        super().__init__()
+        self.n_head = mc.n_head
+        self.qkv = nn.Linear(mc.d, 3 * mc.d, bias=<span class="k">False</span>)
+        self.proj = nn.Linear(mc.d, mc.d, bias=<span class="k">False</span>)
+    <span class="k">def</span> forward(self, x):
+        B, T, C = x.shape
+        q, k, v = self.qkv(x).split(C, dim=2)
+        q, k, v = (t.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) <span class="k">for</span> t <span class="k">in</span> (q, k, v))
+        y = F.scaled_dot_product_attention(q, k, v, is_causal=<span class="k">True</span>)
+        <span class="k">return</span> self.proj(y.transpose(1, 2).reshape(B, T, C))
+
+<span class="k">class</span> MLP(nn.Module):
+    <span class="k">def</span> __init__(self, mc):
+        super().__init__()
+        self.up = nn.Linear(mc.d, mc.mlp_mult * mc.d, bias=<span class="k">False</span>)
+        self.down = nn.Linear(mc.mlp_mult * mc.d, mc.d, bias=<span class="k">False</span>)
+    <span class="k">def</span> forward(self, x):
+        <span class="k">return</span> self.down(F.gelu(self.up(x)))
+
+<span class="k">class</span> Block(nn.Module):
+    <span class="k">def</span> __init__(self, mc):
+        super().__init__()
+        self.ln1, self.attn = nn.LayerNorm(mc.d), Attention(mc)
+        self.ln2, self.mlp = nn.LayerNorm(mc.d), MLP(mc)
+    <span class="k">def</span> forward(self, x):
+        x = x + self.attn(self.ln1(x)).to(x.dtype)
+        <span class="k">return</span> x + self.mlp(self.ln2(x)).to(x.dtype)
+
+<span class="k">def</span> _ce_slice(h, w, y):
+    logits = h @ w.t()
+    <span class="k">if</span> logits.dtype <span class="k">in</span> (torch.float16, torch.bfloat16):
+        logits = logits.float()
+    <span class="k">return</span> F.cross_entropy(logits, y, reduction=<span class="s">&quot;sum&quot;</span>)
+
+<span class="k">def</span> chunked_ce(h, w, y, chunk):
+    <span class="s">&quot;&quot;&quot;Mean cross-entropy, computed slice by slice and recomputed in the backward pass.&quot;&quot;&quot;</span>
+    h, y = h.reshape(-1, h.size(-1)), y.reshape(-1)
+    total = h.new_zeros((), dtype=torch.float64 <span class="k">if</span> h.dtype == torch.float64 <span class="k">else</span> torch.float32)
+    <span class="k">for</span> i <span class="k">in</span> range(0, h.size(0), chunk):
+        <span class="k">if</span> torch.is_grad_enabled():
+            total = total + checkpoint(_ce_slice, h[i:i + chunk], w, y[i:i + chunk], use_reentrant=<span class="k">False</span>)
+        <span class="k">else</span>:
+            total = total + _ce_slice(h[i:i + chunk], w, y[i:i + chunk])
+    <span class="k">return</span> total / y.numel()
+
+<span class="k">class</span> GPT(nn.Module):
+    <span class="k">def</span> __init__(self, mc):
+        super().__init__()
+        self.mc = mc
+        self.wte = nn.Embedding(mc.vocab, mc.d)
+        self.wpe = nn.Embedding(mc.seq, mc.d)
+        self.blocks = nn.ModuleList(Block(mc) <span class="k">for</span> _ <span class="k">in</span> range(mc.n_layer))
+        self.ln_f = nn.LayerNorm(mc.d)
+        self.apply(self._init)
+        <span class="k">for</span> b <span class="k">in</span> self.blocks:        <span class="c"># GPT-2 style: shrink the layers that write into the stream</span>
+            <span class="k">for</span> w <span class="k">in</span> (b.attn.proj.weight, b.mlp.down.weight):
+                nn.init.normal_(w, std=0.02 / math.sqrt(2 * mc.n_layer))
+
+    @staticmethod
+    <span class="k">def</span> _init(m):
+        <span class="k">if</span> isinstance(m, (nn.Linear, nn.Embedding)):
+            nn.init.normal_(m.weight, std=0.02)
+
+    <span class="k">def</span> hidden(self, idx):
+        T = idx.size(1)
+        x = self.wte(idx) + self.wpe(torch.arange(T, device=idx.device))
+        <span class="k">for</span> blk <span class="k">in</span> self.blocks:
+            x = blk(x)
+        <span class="k">return</span> self.ln_f(x)
+
+    <span class="k">def</span> forward(self, idx, targets, chunk=<span class="k">None</span>):
+        <span class="k">return</span> chunked_ce(self.hidden(idx), self.wte.weight, targets, chunk <span class="k">or</span> TC.loss_chunk)
+
+    @torch.no_grad()
+    <span class="k">def</span> logits(self, idx):
+        <span class="k">return</span> self.hidden(idx) @ self.wte.weight.t()
+
+<span class="k">def</span> make_dense():
+    torch.manual_seed(SEED)
+    <span class="k">return</span> GPT(MC).to(DEVICE)
+
+_m = make_dense()
+_n = sum(p.numel() <span class="k">for</span> p <span class="k">in</span> _m.parameters())
+<span class="k">assert</span> _n == PB[<span class="s">&quot;total&quot;</span>], (_n, PB[<span class="s">&quot;total&quot;</span>])
+print(f&quot;parameters: {_n:,}  (matches the breakdown in Cell 2)&quot;)
+<span class="k">del</span> _m</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">parameters: 22,467,200  (matches the breakdown in Cell 2)</pre></div><p class="outnote">22,467,200 parameters, matching the breakdown in Cell 2 to the last one.</p></article><article class="cell"><h3>Cell 6 &middot; The training loop, frozen after v1</h3><div class="body"><p>One function, <code>train_run</code>, trains any model: AdamW (weight decay on matrices only), gradient clipping, fp16 with a loss scaler, validation every 2.5M tokens, a checkpoint every 8 minutes, and a <b>final checkpoint</b> (weights, optimiser moments, scaler) that later runs start from.</p><p>It was written in v1 with arguments v1 did not need: <code>init</code> (start from saved weights), <code>window_start</code> (read later data), <code>warmup</code>/<code>decay</code>, and two hooks, <code>extra_loss</code> and <code>after_step</code>, which the MoE later uses for its balance loss and bias updates. Because the cache hashes this cell's source, editing it would have retrained R1; designing the hooks in advance meant it never had to change.</p></div><p class="io"><b>Inputs:</b> a model builder, a step count, the schedule, optional hooks. <b>Outputs:</b> a history dictionary; a final checkpoint on Drive.</p><details class="src"><summary>Show the full cell source &mdash; 170 lines</summary><pre class="code"><span class="k">def</span> make_opt(model, lr):
+    decay = [p <span class="k">for</span> n, p <span class="k">in</span> model.named_parameters() <span class="k">if</span> p.dim() &gt;= 2]
+    no_decay = [p <span class="k">for</span> n, p <span class="k">in</span> model.named_parameters() <span class="k">if</span> p.dim() &lt; 2]
+    groups = [{<span class="s">&quot;params&quot;</span>: decay, <span class="s">&quot;weight_decay&quot;</span>: TC.weight_decay},
+              {<span class="s">&quot;params&quot;</span>: no_decay, <span class="s">&quot;weight_decay&quot;</span>: 0.0}]
+    kw = {<span class="s">&quot;fused&quot;</span>: <span class="k">True</span>} <span class="k">if</span> DEVICE == <span class="s">&quot;cuda&quot;</span> <span class="k">else</span> {}
+    <span class="k">return</span> torch.optim.AdamW(groups, lr=lr, betas=(0.9, TC.beta2), eps=1e-8, **kw)
+
+<span class="k">def</span> lr_at(step, steps, lr, warmup, decay):
+    <span class="s">&quot;&quot;&quot;Warmup-stable-decay: linear up over `warmup` steps, flat, then linear down to
+    min_lr_frac x lr over the last `decay` steps (decay = 0 means it never comes down).&quot;&quot;&quot;</span>
+    <span class="k">if</span> step &lt; warmup:
+        <span class="k">return</span> lr * (step + 1) / warmup
+    <span class="k">if</span> decay <span class="k">and</span> step &gt;= steps - decay:
+        t = (step - (steps - decay) + 1) / decay
+        <span class="k">return</span> lr * (1 - (1 - TC.min_lr_frac) * t)
+    <span class="k">return</span> lr
+
+<span class="k">def</span> _sync():
+    <span class="k">if</span> DEVICE == <span class="s">&quot;cuda&quot;</span>:
+        torch.cuda.synchronize()
+
+@torch.no_grad()
+<span class="k">def</span> evaluate(model):
+    model.eval()
+    ctx = torch.autocast(<span class="s">&quot;cuda&quot;</span>, dtype=AMP_DTYPE) <span class="k">if</span> AMP <span class="k">else</span> nullcontext()
+    tot = 0.0
+    <span class="k">for</span> i <span class="k">in</span> range(TC.eval_batches):
+        x, y = VAL_W.get(i * TC.batch, TC.batch)
+        <span class="k">with</span> ctx:
+            tot += model(x, y).item()
+    model.train()
+    <span class="k">return</span> tot / TC.eval_batches
+
+<span class="k">def</span> _ckpt_path(key):  <span class="k">return</span> cache(f&quot;ckpt_{BASE_KEY}_{key}.pt&quot;)
+<span class="k">def</span> _final_path(key): <span class="k">return</span> cache(f&quot;final_{BASE_KEY}_{key}.pt&quot;)
+<span class="k">def</span> _run_path(key):   <span class="k">return</span> cache(f&quot;run_{BASE_KEY}_{key}.json&quot;)
+
+<span class="k">def</span> train_run(key, make_model, steps, warmup, decay, window_start=0, init=<span class="k">None</span>,
+              extra_loss=<span class="k">None</span>, after_step=<span class="k">None</span>, lr=<span class="k">None</span>):
+    batch, lr = TC.batch, lr <span class="k">or</span> TC.lr
+    <span class="k">if</span> window_start + steps * batch &gt; len(TRAIN_W):
+        <span class="k">raise</span> ValueError(f&quot;{key}: needs windows up to {window_start + steps*batch:,}, only {len(TRAIN_W):,} exist&quot;)
+    model = make_model()
+    opt = make_opt(model, lr)
+    scaler = torch.amp.GradScaler(<span class="s">&quot;cuda&quot;</span>, enabled=AMP)
+    <span class="k">if</span> init <span class="k">is</span> <span class="k">not</span> <span class="k">None</span>:
+        model.load_state_dict(init[<span class="s">&quot;model&quot;</span>])
+        <span class="k">if</span> init.get(<span class="s">&quot;opt&quot;</span>) <span class="k">is</span> <span class="k">not</span> <span class="k">None</span>:
+            opt.load_state_dict(init[<span class="s">&quot;opt&quot;</span>])
+        <span class="k">if</span> init.get(<span class="s">&quot;scaler&quot;</span>) <span class="k">is</span> <span class="k">not</span> <span class="k">None</span> <span class="k">and</span> AMP:
+            scaler.load_state_dict(init[<span class="s">&quot;scaler&quot;</span>])
+    ctx = torch.autocast(<span class="s">&quot;cuda&quot;</span>, dtype=AMP_DTYPE) <span class="k">if</span> AMP <span class="k">else</span> nullcontext()
+    eval_every = max(1, TC.eval_every_tokens // (batch * MC.seq))
+    hist = {<span class="s">&quot;key&quot;</span>: key, <span class="s">&quot;steps&quot;</span>: steps, <span class="s">&quot;batch&quot;</span>: batch, <span class="s">&quot;lr&quot;</span>: lr, <span class="s">&quot;warmup&quot;</span>: warmup, <span class="s">&quot;decay&quot;</span>: decay,
+            <span class="s">&quot;window_start&quot;</span>: window_start, <span class="s">&quot;tokens_per_step&quot;</span>: batch * MC.seq,
+            <span class="s">&quot;train&quot;</span>: [], <span class="s">&quot;val&quot;</span>: [], <span class="s">&quot;lr_trace&quot;</span>: [], <span class="s">&quot;train_seconds&quot;</span>: 0.0, <span class="s">&quot;timed_tokens&quot;</span>: 0, <span class="s">&quot;extra&quot;</span>: {}}
+    start = 0
+    ck = _ckpt_path(key)
+    <span class="k">if</span> <span class="k">not</span> RESET_CACHE <span class="k">and</span> os.path.exists(ck):
+        <span class="k">try</span>:
+            blob = torch.load(ck, map_location=DEVICE, weights_only=<span class="k">False</span>)
+            model.load_state_dict(blob[<span class="s">&quot;model&quot;</span>]); opt.load_state_dict(blob[<span class="s">&quot;opt&quot;</span>])
+            scaler.load_state_dict(blob[<span class="s">&quot;scaler&quot;</span>]); hist = blob[<span class="s">&quot;hist&quot;</span>]; start = blob[<span class="s">&quot;step&quot;</span>] + 1
+            print(f&quot;    [resume] &#x27;{key}&#x27; from step {start:,} of {steps:,}&quot;)
+        <span class="k">except</span> Exception <span class="k">as</span> e:
+            print(f&quot;    [resume failed] &#x27;{key}&#x27;: {type(e).__name__}, starting over&quot;)
+    <span class="k">if</span> start == 0:                               <span class="c"># loss before any step: where this run begins</span>
+        hist[<span class="s">&quot;val&quot;</span>].append({<span class="s">&quot;step&quot;</span>: 0, <span class="s">&quot;tokens&quot;</span>: 0, <span class="s">&quot;loss&quot;</span>: evaluate(model), <span class="s">&quot;train_seconds&quot;</span>: 0.0})
+        print(f&quot;    {key:&lt;14} step      0/{steps:,}  val {hist[<span class="s">&#x27;val&#x27;</span>][0][<span class="s">&#x27;loss&#x27;</span>]:.4f}  (before training)&quot;)
+    <span class="k">if</span> DEVICE == <span class="s">&quot;cuda&quot;</span>:
+        torch.cuda.reset_peak_memory_stats()
+    model.train()
+    last_ck, win_t0, win_tok, run_loss = time.time(), <span class="k">None</span>, 0, []
+    <span class="k">for</span> step <span class="k">in</span> range(start, steps):
+        cur_lr = lr_at(step, steps, lr, warmup, decay)
+        <span class="k">for</span> g <span class="k">in</span> opt.param_groups:
+            g[<span class="s">&quot;lr&quot;</span>] = cur_lr
+        x, y = TRAIN_W.get(window_start + step * batch, batch)
+        <span class="k">if</span> step == start + 10:
+            _sync(); win_t0, win_tok = time.time(), 0
+        <span class="k">with</span> ctx:
+            loss = model(x, y)
+            total = loss + extra_loss(model) <span class="k">if</span> extra_loss <span class="k">else</span> loss
+        scaler.scale(total).backward()
+        scaler.unscale_(opt)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), TC.grad_clip)
+        scaler.step(opt); scaler.update()
+        opt.zero_grad(set_to_none=<span class="k">True</span>)
+        <span class="k">if</span> after_step:
+            after_step(model, step, hist)
+        run_loss.append(loss.item())
+        <span class="k">if</span> win_t0 <span class="k">is</span> <span class="k">not</span> <span class="k">None</span>:
+            win_tok += batch * MC.seq
+        last = step == steps - 1
+        is_eval = (step + 1) % eval_every == 0 <span class="k">or</span> last
+        <span class="k">if</span> ((step + 1) % TC.log_every == 0 <span class="k">or</span> is_eval) <span class="k">and</span> run_loss:
+            hist[<span class="s">&quot;train&quot;</span>].append({<span class="s">&quot;step&quot;</span>: step + 1, <span class="s">&quot;tokens&quot;</span>: (step + 1) * batch * MC.seq,
+                                  <span class="s">&quot;loss&quot;</span>: float(np.mean(run_loss))})
+            hist[<span class="s">&quot;lr_trace&quot;</span>].append({<span class="s">&quot;step&quot;</span>: step + 1, <span class="s">&quot;lr&quot;</span>: cur_lr})
+            run_loss = []
+        <span class="k">if</span> is_eval:
+            <span class="k">if</span> win_t0 <span class="k">is</span> <span class="k">not</span> <span class="k">None</span>:
+                _sync(); hist[<span class="s">&quot;train_seconds&quot;</span>] += time.time() - win_t0; hist[<span class="s">&quot;timed_tokens&quot;</span>] += win_tok
+            v = evaluate(model)
+            hist[<span class="s">&quot;val&quot;</span>].append({<span class="s">&quot;step&quot;</span>: step + 1, <span class="s">&quot;tokens&quot;</span>: (step + 1) * batch * MC.seq, <span class="s">&quot;loss&quot;</span>: v,
+                                <span class="s">&quot;train_seconds&quot;</span>: hist[<span class="s">&quot;train_seconds&quot;</span>]})
+            tps = hist[<span class="s">&quot;timed_tokens&quot;</span>] / hist[<span class="s">&quot;train_seconds&quot;</span>] <span class="k">if</span> hist[<span class="s">&quot;train_seconds&quot;</span>] <span class="k">else</span> float(<span class="s">&quot;nan&quot;</span>)
+            print(f&quot;    {key:&lt;14} step {step+1:&gt;6,}/{steps:,}  tokens {(step+1)*batch*MC.seq/1e6:5.1f}M  &quot;
+                  f&quot;lr {cur_lr:.2e}  train {hist[<span class="s">&#x27;train&#x27;</span>][-1][<span class="s">&#x27;loss&#x27;</span>]:.4f}  val {v:.4f}  {tps:,.0f} tok/s&quot;)
+            <span class="k">if</span> win_t0 <span class="k">is</span> <span class="k">not</span> <span class="k">None</span>:
+                _sync(); win_t0, win_tok = time.time(), 0
+        <span class="k">if</span> time.time() - last_ck &gt; TC.ckpt_minutes * 60 <span class="k">and</span> <span class="k">not</span> last:
+            <span class="k">if</span> win_t0 <span class="k">is</span> <span class="k">not</span> <span class="k">None</span>:
+                _sync(); hist[<span class="s">&quot;train_seconds&quot;</span>] += time.time() - win_t0; hist[<span class="s">&quot;timed_tokens&quot;</span>] += win_tok
+                win_t0, win_tok = time.time(), 0
+            _atomic_save({<span class="s">&quot;model&quot;</span>: model.state_dict(), <span class="s">&quot;opt&quot;</span>: opt.state_dict(),
+                          <span class="s">&quot;scaler&quot;</span>: scaler.state_dict(), <span class="s">&quot;hist&quot;</span>: hist, <span class="s">&quot;step&quot;</span>: step}, ck)
+            last_ck = time.time()
+    hist[<span class="s">&quot;tokens_per_second&quot;</span>] = hist[<span class="s">&quot;timed_tokens&quot;</span>] / hist[<span class="s">&quot;train_seconds&quot;</span>] <span class="k">if</span> hist[<span class="s">&quot;train_seconds&quot;</span>] <span class="k">else</span> <span class="k">None</span>
+    hist[<span class="s">&quot;peak_mem_bytes&quot;</span>] = torch.cuda.max_memory_allocated() <span class="k">if</span> DEVICE == <span class="s">&quot;cuda&quot;</span> <span class="k">else</span> <span class="k">None</span>
+    hist[<span class="s">&quot;final_val&quot;</span>] = hist[<span class="s">&quot;val&quot;</span>][-1][<span class="s">&quot;loss&quot;</span>]
+    hist[<span class="s">&quot;final_train&quot;</span>] = hist[<span class="s">&quot;train&quot;</span>][-1][<span class="s">&quot;loss&quot;</span>]
+    _atomic_save({<span class="s">&quot;model&quot;</span>: model.state_dict(), <span class="s">&quot;opt&quot;</span>: opt.state_dict(), <span class="s">&quot;scaler&quot;</span>: scaler.state_dict()},
+                 _final_path(key))
+    <span class="k">del</span> model, opt
+    <span class="k">if</span> DEVICE == <span class="s">&quot;cuda&quot;</span>:
+        torch.cuda.empty_cache()
+    <span class="k">return</span> hist
+
+<span class="k">def</span> _replay(hist):
+    <span class="s">&quot;&quot;&quot;Print a reloaded run&#x27;s progress from its saved log.&quot;&quot;&quot;</span>
+    key, tr = hist[<span class="s">&quot;key&quot;</span>], {p[<span class="s">&quot;step&quot;</span>]: p[<span class="s">&quot;loss&quot;</span>] <span class="k">for</span> p <span class="k">in</span> hist[<span class="s">&quot;train&quot;</span>]}
+    print(f&quot;    [cached run] &#x27;{key}&#x27; reloaded, not retrained; progress replayed from its saved log:&quot;)
+    <span class="k">for</span> p <span class="k">in</span> hist[<span class="s">&quot;val&quot;</span>]:
+        earlier = [s <span class="k">for</span> s <span class="k">in</span> tr <span class="k">if</span> s &lt;= p[<span class="s">&quot;step&quot;</span>]]
+        t = f&quot;{tr[max(earlier)]:.4f}&quot; <span class="k">if</span> earlier <span class="k">else</span> <span class="s">&quot;  -   &quot;</span>
+        print(f&quot;    {key:&lt;14} step {p[<span class="s">&#x27;step&#x27;</span>]:&gt;6,}/{hist[<span class="s">&#x27;steps&#x27;</span>]:,}  tokens {p[<span class="s">&#x27;tokens&#x27;</span>]/1e6:5.1f}M  &quot;
+              f&quot;train {t}  val {p[<span class="s">&#x27;loss&#x27;</span>]:.4f}  {p[<span class="s">&#x27;train_seconds&#x27;</span>]/60:5.1f} train-min&quot;)
+    tps, pk = hist.get(<span class="s">&quot;tokens_per_second&quot;</span>), hist.get(<span class="s">&quot;peak_mem_bytes&quot;</span>)
+    print(f&quot;    {key:&lt;14} measured: &quot; + (f&quot;{tps:,.0f} tokens/s&quot; <span class="k">if</span> tps <span class="k">else</span> <span class="s">&quot;speed not timed&quot;</span>)
+          + (f&quot;, peak memory {pk/2**20:,.0f} MiB&quot; <span class="k">if</span> pk <span class="k">else</span> <span class="s">&quot;&quot;</span>))
+
+DENSE_CODE = (Attention, MLP, Block, GPT, chunked_ce, _ce_slice, make_dense, train_run, lr_at, make_opt, evaluate, Windows)
+
+<span class="k">def</span> cached_run(key, code, **kw):
+    <span class="s">&quot;&quot;&quot;Train once per configuration and code version; a finished run reloads instantly.
+    `code` lists the functions and classes whose source defines this run.&quot;&quot;&quot;</span>
+    path = _run_path(key)
+    want = {<span class="s">&quot;src&quot;</span>: _src_hash(*code), <span class="s">&quot;kw&quot;</span>: {k: (v.__name__ <span class="k">if</span> callable(v) <span class="k">else</span> v) <span class="k">for</span> k, v <span class="k">in</span> kw.items()
+                                             <span class="k">if</span> k != <span class="s">&quot;init&quot;</span>}}
+    want = json.loads(json.dumps(want, default=str))
+    <span class="k">if</span> <span class="k">not</span> RESET_CACHE <span class="k">and</span> os.path.exists(path) <span class="k">and</span> os.path.exists(_final_path(key)):
+        blob = json.load(open(path, encoding=<span class="s">&quot;utf-8&quot;</span>))
+        <span class="k">if</span> blob.get(<span class="s">&quot;want&quot;</span>) == want:
+            _replay(blob[<span class="s">&quot;hist&quot;</span>])
+            <span class="k">return</span> blob[<span class="s">&quot;hist&quot;</span>]
+        print(f&quot;    [stale] &#x27;{key}&#x27;: settings or code changed since it was trained, training again&quot;)
+    hist = train_run(key, **kw)
+    _atomic_save({<span class="s">&quot;want&quot;</span>: want, <span class="s">&quot;hist&quot;</span>: hist}, path, as_json=<span class="k">True</span>)
+    _atomic_save(hist, os.path.join(LOG_DIR, f&quot;{key}.json&quot;), as_json=<span class="k">True</span>)
+    <span class="k">if</span> os.path.exists(_ckpt_path(key)):
+        os.remove(_ckpt_path(key))
+    <span class="k">return</span> hist
+
+<span class="k">def</span> load_final(key):
+    <span class="k">return</span> torch.load(_final_path(key), map_location=DEVICE, weights_only=<span class="k">False</span>)
+
+print(f&quot;eval every {TC.eval_every_tokens/1e6:.1f}M tokens on {TC.eval_batches*TC.batch*MC.seq:,} &quot;
+      f&quot;validation tokens; checkpoint every {TC.ckpt_minutes:g} min&quot;)</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">eval every 2.5M tokens on 327,680 validation tokens; checkpoint every 8 min</pre></div></article></section><section class="grp"><h2><span class="gtag">Task 1</span><span class="gname">Train a dense model</span></h2><article class="cell"><h3>Cell 7 &middot; R1: the dense model, 50M tokens</h3><div class="body"><p>Trains the dense model from random weights: 200 warm-up steps, then a flat learning rate to the end, with no decay on purpose. On this run it was <b>reloaded from Drive</b>, not retrained, and the log below is the replay of the v1 run.</p></div><p class="io"><b>Inputs:</b> <code>make_dense</code>, the first 50M tokens. <b>Outputs:</b> <code>R1</code>: validation loss 9.0792 &rarr; 4.1230; its final checkpoint.</p><details class="src"><summary>Show the full cell source &mdash; 9 lines</summary><pre class="code">RUN_R1 = <span class="s">&quot;R1_dense&quot;</span>
+R1 = cached_run(RUN_R1, DENSE_CODE, make_model=make_dense, steps=STEPS,
+                warmup=TC.warmup_steps, decay=0, window_start=0)
+_first, _last = R1[<span class="s">&quot;val&quot;</span>][0][<span class="s">&quot;loss&quot;</span>], R1[<span class="s">&quot;final_val&quot;</span>]
+print(f&quot;\nR1: validation loss {_first:.4f} before training -&gt; {_last:.4f} after {STEPS:,} steps &quot;
+      f&quot;({(_first - _last):.3f} lower)&quot;)
+<span class="k">if</span> R1.get(<span class="s">&quot;tokens_per_second&quot;</span>):
+    print(f&quot;    speed {R1[<span class="s">&#x27;tokens_per_second&#x27;</span>]:,.0f} tokens/s&quot;
+          + (f&quot;, peak memory {R1[<span class="s">&#x27;peak_mem_bytes&#x27;</span>]/2**20:,.0f} MiB&quot; <span class="k">if</span> R1.get(<span class="s">&quot;peak_mem_bytes&quot;</span>) <span class="k">else</span> <span class="s">&quot;&quot;</span>))</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">    [cached run] &#x27;R1_dense&#x27; reloaded, not retrained; progress replayed from its saved log:
+    R1_dense       step      0/3,051  tokens   0.0M  train   -     val 9.0792    0.0 train-min
+    R1_dense       step    152/3,051  tokens   2.5M  train 6.2760  val 6.3321    0.6 train-min
+    R1_dense       step    304/3,051  tokens   5.0M  train 5.8727  val 5.9121    1.4 train-min
+    R1_dense       step    456/3,051  tokens   7.5M  train 5.6094  val 5.6331    2.1 train-min
+    R1_dense       step    608/3,051  tokens  10.0M  train 5.3921  val 5.3828    2.9 train-min
+    R1_dense       step    760/3,051  tokens  12.5M  train 5.2123  val 5.2143    3.7 train-min
+    R1_dense       step    912/3,051  tokens  14.9M  train 5.0516  val 5.0525    4.4 train-min
+    R1_dense       step  1,064/3,051  tokens  17.4M  train 4.9233  val 4.9060    5.2 train-min
+    R1_dense       step  1,216/3,051  tokens  19.9M  train 4.7511  val 4.7293    6.0 train-min
+    R1_dense       step  1,368/3,051  tokens  22.4M  train 4.6511  val 4.6043    6.7 train-min
+    R1_dense       step  1,520/3,051  tokens  24.9M  train 4.5323  val 4.5161    7.5 train-min
+    R1_dense       step  1,672/3,051  tokens  27.4M  train 4.4829  val 4.4304    8.3 train-min
+    R1_dense       step  1,824/3,051  tokens  29.9M  train 4.4204  val 4.3781    9.0 train-min
+    R1_dense       step  1,976/3,051  tokens  32.4M  train 4.2731  val 4.3282    9.8 train-min
+    R1_dense       step  2,128/3,051  tokens  34.9M  train 4.3540  val 4.2873   10.5 train-min
+    R1_dense       step  2,280/3,051  tokens  37.4M  train 4.2689  val 4.2507   11.3 train-min
+    R1_dense       step  2,432/3,051  tokens  39.8M  train 4.2400  val 4.2188   12.1 train-min
+    R1_dense       step  2,584/3,051  tokens  42.3M  train 4.2682  val 4.2014   12.8 train-min
+    R1_dense       step  2,736/3,051  tokens  44.8M  train 4.1968  val 4.1688   13.6 train-min
+    R1_dense       step  2,888/3,051  tokens  47.3M  train 4.2066  val 4.1516   14.4 train-min
+    R1_dense       step  3,040/3,051  tokens  49.8M  train 4.1380  val 4.1264   15.1 train-min
+    R1_dense       step  3,051/3,051  tokens  50.0M  train 4.1474  val 4.1230   15.2 train-min
+    R1_dense       measured: 54,666 tokens/s, peak memory 4,052 MiB
+
+R1: validation loss 9.0792 before training -&gt; 4.1230 after 3,051 steps (4.956 lower)
+    speed 54,666 tokens/s, peak memory 4,052 MiB</pre></div><p class="outnote">Validation 9.0792 &rarr; 4.1230 at 54,666 tokens/s. Predicted beforehand: 4.2&ndash;4.4. The prediction missed; the plan's Section 6.5 says why that comparison with session 13 cannot isolate the decay.</p></article><article class="cell"><h3>Cell 8 &middot; Gate: R1's checkpoint reloads to the same model</h3><div class="body"><p>Everything after this point starts from R1's final checkpoint, so the gate loads it into a fresh model and checks that the validation loss comes out exactly as it did at the end of training.</p></div><p class="io"><b>Inputs:</b> R1's final checkpoint. <b>Outputs:</b> a PASS, or the notebook stops.</p><details class="src"><summary>Show the full cell source &mdash; 17 lines</summary><pre class="code"><span class="k">class</span> GateError(AssertionError):
+    <span class="k">pass</span>
+
+<span class="k">def</span> gate(ok, msg):
+    print(f&quot;  [{<span class="s">&#x27;PASS&#x27;</span> <span class="k">if</span> ok <span class="k">else</span> <span class="s">&#x27;FAIL&#x27;</span>}] {msg}&quot;)
+    <span class="k">if</span> <span class="k">not</span> ok:
+        <span class="k">raise</span> GateError(msg)
+
+_blob = load_final(RUN_R1)
+_m = make_dense(); _m.load_state_dict(_blob[<span class="s">&quot;model&quot;</span>])
+_v = evaluate(_m)
+_diff = abs(_v - R1[<span class="s">&quot;final_val&quot;</span>])
+gate(_diff &lt; 1e-5, f&quot;R1 checkpoint reloads: validation loss {_v:.6f} vs {R1[<span class="s">&#x27;final_val&#x27;</span>]:.6f} &quot;
+                   f&quot;at the end of training (difference {_diff:.1e})&quot;)
+_opt_steps = [s[<span class="s">&quot;step&quot;</span>] <span class="k">for</span> s <span class="k">in</span> _blob[<span class="s">&quot;opt&quot;</span>][<span class="s">&quot;state&quot;</span>].values()][:1]
+gate(len(_blob[<span class="s">&quot;opt&quot;</span>][<span class="s">&quot;state&quot;</span>]) &gt; 0, f&quot;optimiser moments saved too (Adam step count {int(_opt_steps[0]) <span class="k">if</span> _opt_steps <span class="k">else</span> 0:,})&quot;)
+R[<span class="s">&quot;gates&quot;</span>][<span class="s">&quot;r1_reload&quot;</span>] = {<span class="s">&quot;val_reloaded&quot;</span>: _v, <span class="s">&quot;val_recorded&quot;</span>: R1[<span class="s">&quot;final_val&quot;</span>], <span class="s">&quot;diff&quot;</span>: _diff}</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">  [PASS] R1 checkpoint reloads: validation loss 4.123029 vs 4.123029 at the end of training (difference 0.0e+00)
+  [PASS] optimiser moments saved too (Adam step count 3,051)</pre></div><p class="outnote">Difference 0.0: the checkpoint is exactly R1.</p></article><article class="cell"><h3>Cell 9 &middot; What R1 learned: its curve, its schedule, three samples</h3><div class="body"><p>Draws R1's loss and learning rate, and lets the model continue three prompts at temperature 0.8, so a number like 4.12 has a picture: English-shaped sentences that hold for a clause and then wander.</p></div><p class="io"><b>Inputs:</b> <code>R1</code>, its checkpoint. <b>Outputs:</b> <code>r1_loss_lr.png</code>, three samples.</p><details class="src"><summary>Show the full cell source &mdash; 42 lines</summary><pre class="code">plt.rcParams.update({<span class="s">&quot;figure.dpi&quot;</span>: 110, <span class="s">&quot;font.size&quot;</span>: 9, <span class="s">&quot;axes.spines.top&quot;</span>: <span class="k">False</span>,
+                     <span class="s">&quot;axes.spines.right&quot;</span>: <span class="k">False</span>})
+
+<span class="k">def</span> _save(fig, name):
+    fig.tight_layout()
+    fig.savefig(out(name), bbox_inches=<span class="s">&quot;tight&quot;</span>)
+    plt.close(fig)
+    print(f&quot;  saved {name}&quot;)
+
+fig, ax = plt.subplots(1, 2, figsize=(10, 3.4))
+ax[0].plot([p[<span class="s">&quot;tokens&quot;</span>]/1e6 <span class="k">for</span> p <span class="k">in</span> R1[<span class="s">&quot;train&quot;</span>]], [p[<span class="s">&quot;loss&quot;</span>] <span class="k">for</span> p <span class="k">in</span> R1[<span class="s">&quot;train&quot;</span>]],
+           color=<span class="s">&quot;#cbc5bb&quot;</span>, lw=1, label=<span class="s">&quot;train (25-step means)&quot;</span>)
+ax[0].plot([p[<span class="s">&quot;tokens&quot;</span>]/1e6 <span class="k">for</span> p <span class="k">in</span> R1[<span class="s">&quot;val&quot;</span>]], [p[<span class="s">&quot;loss&quot;</span>] <span class="k">for</span> p <span class="k">in</span> R1[<span class="s">&quot;val&quot;</span>]],
+           color=<span class="s">&quot;#b1521f&quot;</span>, marker=<span class="s">&quot;o&quot;</span>, ms=3, label=<span class="s">&quot;validation&quot;</span>)
+ax[0].set_xlabel(<span class="s">&quot;training tokens (millions)&quot;</span>); ax[0].set_ylabel(<span class="s">&quot;loss&quot;</span>); ax[0].legend(frameon=<span class="k">False</span>)
+ax[0].set_ylim(top=min(10, R1[<span class="s">&quot;val&quot;</span>][0][<span class="s">&quot;loss&quot;</span>] + 0.3))
+ax[1].plot([p[<span class="s">&quot;step&quot;</span>] <span class="k">for</span> p <span class="k">in</span> R1[<span class="s">&quot;lr_trace&quot;</span>]], [p[<span class="s">&quot;lr&quot;</span>] <span class="k">for</span> p <span class="k">in</span> R1[<span class="s">&quot;lr_trace&quot;</span>]], color=<span class="s">&quot;#1f6f8b&quot;</span>)
+ax[1].set_xlabel(<span class="s">&quot;step&quot;</span>); ax[1].set_ylabel(<span class="s">&quot;learning rate&quot;</span>); ax[1].set_ylim(0, TC.lr * 1.15)
+ax[1].set_title(<span class="s">&quot;warm-up, then flat: no decay in R1&quot;</span>, fontsize=9)
+_save(fig, <span class="s">&quot;r1_loss_lr.png&quot;</span>)
+
+@torch.no_grad()
+<span class="k">def</span> sample(model, prompt, n=40, temperature=0.8, top_k=40, seed=0):
+    g = torch.Generator(device=<span class="s">&quot;cpu&quot;</span>).manual_seed(seed)
+    ids = TOK.encode(prompt).ids
+    model.eval()
+    <span class="k">for</span> _ <span class="k">in</span> range(n):
+        x = torch.tensor([ids[-MC.seq:]], device=DEVICE)
+        logits = model.logits(x)[0, -1].float().cpu() / temperature
+        v, i = torch.topk(logits, top_k)
+        nxt = i[torch.multinomial(torch.softmax(v, -1), 1, generator=g)].item()
+        ids.append(nxt)
+    <span class="k">return</span> TOK.decode(ids)
+
+PROMPTS = [<span class="s">&quot;The best way to learn a new language is&quot;</span>, <span class="s">&quot;Scientists have found that&quot;</span>,
+           <span class="s">&quot;In the middle of the city there is&quot;</span>]
+R[<span class="s">&quot;samples_r1&quot;</span>] = []
+<span class="k">for</span> p <span class="k">in</span> PROMPTS:
+    s = sample(_m, p)
+    R[<span class="s">&quot;samples_r1&quot;</span>].append(s)
+    print(f&quot;\n  &gt; {s!r}&quot;)
+<span class="k">del</span> _m</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">  saved r1_loss_lr.png
+
+  &gt; &#x27;The best way to learn a new language is to try to make a new generation of people. The first one is to take a new generation to write a new generation of people who have seen the right method of finding and learning to the world.&#x27;
+
+  &gt; &#x27;Scientists have found that it was a great day to use the world. It is not an easy method to use. It also comes with a very simple tool that they are very professional and not very important for them. It&#x27;
+
+  &gt; &#x27;In the middle of the city there is no lap.\nIn the middle of the Southwest, the middle of the Navy is an indication of the airways, whose main characteristic is the first time to test the class&#x27;</pre></div></article><article class="cell"><h3>Cell 10 &middot; v1's checks, re-run in every version</h3><div class="body"><p>The five promises v1 made (data long enough, R1 finished, R1's loss fell, R1 never decayed, the checkpoint reloads). They are checked again here because everything below depends on them.</p></div><p class="io"><b>Inputs:</b> R1. <b>Outputs:</b> <code>CHECKS_V1</code>.</p><details class="src"><summary>Show the full cell source &mdash; 11 lines</summary><pre class="code">CHECKS_V1 = [
+    (<span class="s">&quot;data: 100M tokens, enough windows for R1 and both continuations&quot;</span>, 2 * R1_WINDOWS &lt;= len(TRAIN_W)),
+    (<span class="s">&quot;R1: finished its step budget&quot;</span>, R1[<span class="s">&quot;train&quot;</span>][-1][<span class="s">&quot;step&quot;</span>] == STEPS),
+    (<span class="s">&quot;R1: validation loss fell&quot;</span>, R1[<span class="s">&quot;final_val&quot;</span>] &lt; R1[<span class="s">&quot;val&quot;</span>][0][<span class="s">&quot;loss&quot;</span>]),
+    (<span class="s">&quot;R1: never decayed (last learning rate = peak)&quot;</span>, abs(R1[<span class="s">&quot;lr_trace&quot;</span>][-1][<span class="s">&quot;lr&quot;</span>] - TC.lr) &lt; 1e-12),
+    (<span class="s">&quot;R1: checkpoint reloads to the same validation loss&quot;</span>, R[<span class="s">&quot;gates&quot;</span>][<span class="s">&quot;r1_reload&quot;</span>][<span class="s">&quot;diff&quot;</span>] &lt; 1e-5),
+]
+print(<span class="s">&quot;V1 CHECKS&quot;</span>)
+<span class="k">for</span> name, ok <span class="k">in</span> CHECKS_V1:
+    print(f&quot;  [{<span class="s">&#x27;PASS&#x27;</span> <span class="k">if</span> ok <span class="k">else</span> <span class="s">&#x27;FAIL&#x27;</span>}] {name}&quot;)
+R[<span class="s">&quot;runs&quot;</span>] = {<span class="s">&quot;R1&quot;</span>: R1}</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">V1 CHECKS
+  [PASS] data: 100M tokens, enough windows for R1 and both continuations
+  [PASS] R1: finished its step budget
+  [PASS] R1: validation loss fell
+  [PASS] R1: never decayed (last learning rate = peak)
+  [PASS] R1: checkpoint reloads to the same validation loss</pre></div></article></section><section class="grp"><h2><span class="gtag">Task 2 &middot; gates</span><span class="gname">Convert it into an MoE</span></h2><article class="cell"><h3>Cell 11 &middot; The MoE layer</h3><div class="body"><p><code>FamilyMoE</code> replaces one FFN. It stores <b>32 experts in 4 families of 8</b>; each expert is a small FFN of 320 neurons. For every token the <b>router</b> (a 320 &times; 32 matrix, run in fp32, starting at zero) scores all 32; in each family the expert with the highest <code>logit + bias</code> is chosen (or, early in training, one is drawn at random in proportion to those values); and the four chosen scores are rescaled to <b>sum to 4</b>.</p><p>Rescaling the four together, not each family on its own, is the design detail that was caught on paper before any code ran: with one pick per family, rescaling each pick by itself always gives exactly 1, and the router would never receive a gradient. The <code>joint=False</code> switch keeps the flawed rule so Cell 13 can prove it.</p><p>Balancing follows the lesson's Section 18: a per-expert <b>bias</b> used only for choosing, nudged after every step towards each expert's fair share (step 0.01, ten times the lesson's value, decision D8), plus a tiny per-sequence balance loss.</p></div><p class="io"><b>Inputs:</b> a token vector per position. <b>Outputs:</b> the layer's output (same shape), token counts per expert, the balance loss.</p><details class="src"><summary>Show the full cell source &mdash; 119 lines</summary><pre class="code">@dataclass(frozen=<span class="k">True</span>)
+<span class="k">class</span> MoECfg:
+    families: int = 4
+    clones: int = 8
+    scale: float = 4.0          <span class="c"># the 4 chosen weights sum to 4 (routed scaling factor)</span>
+    bias_gamma: float = 1e-2    <span class="c"># bias step per training step: 10x the lesson&#x27;s 1e-3 (decision D8)</span>
+    seq_aux: float = 1e-4       <span class="c"># small per-sequence balance loss</span>
+    prob_steps: int = 300       <span class="c"># probabilistic selection for the first 300 steps (D3)</span>
+    preview_steps: int = 450    <span class="c"># the v2 preview: 300 probabilistic + 150 hard (D7, revised)</span>
+
+@dataclass(frozen=<span class="k">True</span>)
+<span class="k">class</span> Thresholds:
+    g1_fp64_rel: float = 1e-10  <span class="c"># converted vs dense logits, fp64: the maths must match</span>
+    g1_loss_abs: float = 2e-3   <span class="c"># converted model&#x27;s validation loss vs R1&#x27;s, GPU fp16 rounding</span>
+    g3_maxvio: float = 0.3      <span class="c"># toy balancing must end below this ...</span>
+    g3_ratio: float = 0.5       <span class="c"># ... and below half of where it started</span>
+
+XC, TH = MoECfg(), Thresholds()
+<span class="k">if</span> PROFILE == <span class="s">&quot;cpu&quot;</span>:
+    XC = replace(XC, prob_steps=20, preview_steps=60)
+<span class="k">elif</span> PROFILE == <span class="s">&quot;smoke&quot;</span>:
+    XC = replace(XC, prob_steps=40, preview_steps=60)
+Q = MC.mlp_mult * MC.d // XC.families      <span class="c"># neurons per expert: 1,280 / 4 = 320</span>
+N_EXP = XC.families * XC.clones             <span class="c"># 32</span>
+
+<span class="k">class</span> FamilyMoE(nn.Module):
+    <span class="k">def</span> __init__(self, d, q, fam, clones, scale, joint=<span class="k">True</span>):
+        super().__init__()
+        self.d, self.q, self.fam, self.clones, self.E = d, q, fam, clones, fam * clones
+        self.scale, self.joint = scale, joint
+        self.w_up = nn.Parameter(torch.empty(self.E, q, d))
+        self.w_down = nn.Parameter(torch.empty(self.E, d, q))
+        nn.init.normal_(self.w_up, std=0.02); nn.init.normal_(self.w_down, std=0.02)
+        self.router = nn.Linear(d, self.E, bias=<span class="k">False</span>)
+        nn.init.zeros_(self.router.weight)
+        self.register_buffer(<span class="s">&quot;bias&quot;</span>, torch.zeros(self.E))       <span class="c"># choosing only, never in the loss</span>
+        self.register_buffer(<span class="s">&quot;counts&quot;</span>, torch.zeros(self.E))     <span class="c"># tokens per expert this step</span>
+        self.probabilistic = <span class="k">False</span>
+        self.aux = <span class="k">None</span>
+
+    <span class="k">def</span> route(self, x2):
+        <span class="s">&quot;&quot;&quot;x2 [N, d] -&gt; logits [N, E], global expert id per family [N, fam], weights [N, fam].&quot;&quot;&quot;</span>
+        hi = torch.promote_types(x2.dtype, torch.float32)       <span class="c"># fp32, or fp64 in the gate</span>
+        <span class="k">with</span> torch.autocast(x2.device.type, enabled=<span class="k">False</span>):
+            z = x2.to(hi) @ self.router.weight.to(hi).t()
+        s = torch.softmax(z, dim=-1)
+        key = (z + self.bias.to(hi)).view(-1, self.fam, self.clones)
+        <span class="k">if</span> self.training <span class="k">and</span> self.probabilistic:
+            p = torch.softmax(key.reshape(-1, self.clones), -1)
+            pick = torch.multinomial(p, 1).view(-1, self.fam)
+        <span class="k">else</span>:
+            pick = key.argmax(-1)
+        eid = pick + torch.arange(self.fam, device=x2.device) * self.clones
+        chosen = s.gather(1, eid)
+        <span class="k">if</span> self.joint:
+            w = self.scale * chosen / chosen.sum(-1, keepdim=<span class="k">True</span>)
+        <span class="k">else</span>:                       <span class="c"># the flawed rule: each family&#x27;s pick divided by itself</span>
+            w = chosen / chosen
+        <span class="k">return</span> z, eid, w
+
+    <span class="k">def</span> forward(self, x):
+        shp = x.shape
+        x2 = x.reshape(-1, self.d)
+        z, eid, w = self.route(x2)
+        cnt = torch.bincount(eid.reshape(-1), minlength=self.E)
+        <span class="k">if</span> self.training:
+            self.counts += cnt.to(self.counts.dtype)
+        cnt_l = cnt.tolist()
+        out = torch.zeros_like(x2)
+        <span class="k">for</span> f <span class="k">in</span> range(self.fam):
+            order = torch.argsort(eid[:, f])
+            xs, ys, start = x2[order], [], 0
+            <span class="k">for</span> c <span class="k">in</span> range(self.clones):
+                e, n = f * self.clones + c, cnt_l[f * self.clones + c]
+                <span class="k">if</span> n == 0:
+                    <span class="k">continue</span>
+                h = F.gelu(xs[start:start + n] @ self.w_up[e].t())
+                ys.append(h @ self.w_down[e].t())
+                start += n
+            y = torch.cat(ys)
+            y = y * w[order, f].unsqueeze(1).to(y.dtype)
+            out = out.index_add(0, order, y.to(out.dtype))
+        <span class="k">if</span> self.training <span class="k">and</span> len(shp) == 3:          <span class="c"># per-sequence balance loss (safety net)</span>
+            B, T = shp[0], shp[1]
+            local = (eid - torch.arange(self.fam, device=x.device) * self.clones).view(B, T, self.fam)
+            frac = F.one_hot(local, self.clones).float().mean(1)                        <span class="c"># [B, fam, C]</span>
+            prob = torch.softmax(z.view(B, T, self.fam, self.clones).float(), -1).mean(1)
+            self.aux = (self.clones * (frac * prob).sum(-1)).mean()
+        <span class="k">return</span> out.view(shp)
+
+<span class="k">def</span> make_moe(joint=<span class="k">True</span>, device=<span class="k">None</span>):
+    torch.manual_seed(SEED)
+    m = GPT(MC)
+    <span class="k">for</span> b <span class="k">in</span> m.blocks:
+        b.mlp = FamilyMoE(MC.d, Q, XC.families, XC.clones, XC.scale, joint)
+    <span class="k">return</span> m.to(device <span class="k">or</span> DEVICE)
+
+<span class="k">def</span> make_moe_prob():
+    <span class="s">&quot;&quot;&quot;The model used for training: probabilistic selection switched on at the start.&quot;&quot;&quot;</span>
+    m = make_moe()
+    <span class="k">for</span> b <span class="k">in</span> m.blocks:
+        b.mlp.probabilistic = XC.prob_steps &gt; 0
+    <span class="k">return</span> m
+
+<span class="k">def</span> moe_params(model):
+    tot = sum(p.numel() <span class="k">for</span> p <span class="k">in</span> model.parameters())
+    per_exp = 2 * MC.d * Q
+    idle = MC.n_layer * (N_EXP - XC.families) * per_exp       <span class="c"># experts a token does not use</span>
+    <span class="k">return</span> tot, tot - idle
+
+_m = make_moe()
+_tot, _act = moe_params(_m)
+_want_tot = PB[<span class="s">&quot;total&quot;</span>] - PB[<span class="s">&quot;feed-forward&quot;</span>] + MC.n_layer * (N_EXP * 2 * MC.d * Q + MC.d * N_EXP)
+print(f&quot;MoE model: {MC.n_layer} layers x {N_EXP} experts ({XC.families} families x {XC.clones}), &quot;
+      f&quot;{Q} neurons each, {XC.families} per token&quot;)
+print(f&quot;  total parameters : {_tot:,}  (dense model: {PB[<span class="s">&#x27;total&#x27;</span>]:,})&quot;)
+print(f&quot;  active per token : {_act:,}  (the dense work plus the routers)&quot;)
+R[<span class="s">&quot;moe&quot;</span>] = {<span class="s">&quot;cfg&quot;</span>: asdict(XC), <span class="s">&quot;total_params&quot;</span>: _tot, <span class="s">&quot;active_params&quot;</span>: _act}
+<span class="k">del</span> _m</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">MoE model: 16 layers x 32 experts (4 families x 8), 320 neurons each, 4 per token
+  total parameters : 114,381,440  (dense model: 22,467,200)
+  active per token : 22,631,040  (the dense work plus the routers)</pre></div><p class="outnote">114,381,440 parameters stored, 22,631,040 used per token: the dense model's work plus 163,840 of routers.</p></article><article class="cell"><h3>Cell 12 &middot; The converter: R1 becomes the MoE</h3><div class="body"><p>Cuts each of R1's 16 FFNs into 4 slices of 320 neurons and copies slice <i>f</i> into the 8 experts of family <i>f</i>. The router, biases and counts start at zero.</p><p>It also converts <b>AdamW's memory</b> (decision D6): each expert gets the running averages of the slice it was copied from, and R1's step count. Without that, Adam's first steps on empty averages would move every expert by about the full learning rate at once, a jolt the dense control would not have. The check at the end compares the copied weights and averages with R1's, slice by slice.</p></div><p class="io"><b>Inputs:</b> R1's final checkpoint. <b>Outputs:</b> <code>CONV</code>: the MoE's starting weights, optimiser state and loss scaler.</p><details class="src"><summary>Show the full cell source &mdash; 70 lines</summary><pre class="code"><span class="k">def</span> _expand_up(v):      <span class="c"># [H, d] -&gt; [E, q, d]</span>
+    <span class="k">return</span> torch.cat([v[f * Q:(f + 1) * Q].unsqueeze(0).expand(XC.clones, -1, -1)
+                      <span class="k">for</span> f <span class="k">in</span> range(XC.families)]).contiguous()
+
+<span class="k">def</span> _expand_down(v):    <span class="c"># [d, H] -&gt; [E, d, q]</span>
+    <span class="k">return</span> torch.cat([v[:, f * Q:(f + 1) * Q].unsqueeze(0).expand(XC.clones, -1, -1)
+                      <span class="k">for</span> f <span class="k">in</span> range(XC.families)]).contiguous()
+
+<span class="k">def</span> convert_weights(dense_sd):
+    sd = {}
+    <span class="k">for</span> k, v <span class="k">in</span> dense_sd.items():
+        <span class="k">if</span> k.endswith(<span class="s">&quot;mlp.up.weight&quot;</span>):
+            sd[k.replace(<span class="s">&quot;mlp.up.weight&quot;</span>, <span class="s">&quot;mlp.w_up&quot;</span>)] = _expand_up(v)
+        <span class="k">elif</span> k.endswith(<span class="s">&quot;mlp.down.weight&quot;</span>):
+            sd[k.replace(<span class="s">&quot;mlp.down.weight&quot;</span>, <span class="s">&quot;mlp.w_down&quot;</span>)] = _expand_down(v)
+        <span class="k">else</span>:
+            sd[k] = v
+    ref = v
+    <span class="k">for</span> i <span class="k">in</span> range(MC.n_layer):
+        sd[f&quot;blocks.{i}.mlp.router.weight&quot;] = torch.zeros(N_EXP, MC.d, dtype=ref.dtype, device=ref.device)
+        sd[f&quot;blocks.{i}.mlp.bias&quot;] = torch.zeros(N_EXP, dtype=ref.dtype, device=ref.device)
+        sd[f&quot;blocks.{i}.mlp.counts&quot;] = torch.zeros(N_EXP, dtype=ref.dtype, device=ref.device)
+    <span class="k">return</span> sd
+
+<span class="k">def</span> convert_optimizer(dense_opt_sd, moe_model):
+    dense = make_dense()
+    dopt = make_opt(dense, TC.lr)
+    dopt.load_state_dict(dense_opt_sd)
+    by_name = {n: dopt.state[p] <span class="k">for</span> n, p <span class="k">in</span> dense.named_parameters() <span class="k">if</span> p <span class="k">in</span> dopt.state}
+    mopt = make_opt(moe_model, TC.lr)
+    <span class="k">for</span> n, p <span class="k">in</span> moe_model.named_parameters():
+        <span class="k">if</span> n.endswith(<span class="s">&quot;mlp.router.weight&quot;</span>):
+            <span class="k">continue</span>                                        <span class="c"># new: starts with empty averages</span>
+        <span class="k">if</span> n.endswith(<span class="s">&quot;mlp.w_up&quot;</span>) <span class="k">or</span> n.endswith(<span class="s">&quot;mlp.w_down&quot;</span>):
+            up = n.endswith(<span class="s">&quot;mlp.w_up&quot;</span>)
+            src = by_name[n.replace(<span class="s">&quot;mlp.w_up&quot;</span>, <span class="s">&quot;mlp.up.weight&quot;</span>).replace(<span class="s">&quot;mlp.w_down&quot;</span>, <span class="s">&quot;mlp.down.weight&quot;</span>)]
+            ex = _expand_up <span class="k">if</span> up <span class="k">else</span> _expand_down
+            mopt.state[p] = {<span class="s">&quot;step&quot;</span>: src[<span class="s">&quot;step&quot;</span>].clone(), <span class="s">&quot;exp_avg&quot;</span>: ex(src[<span class="s">&quot;exp_avg&quot;</span>]),
+                             <span class="s">&quot;exp_avg_sq&quot;</span>: ex(src[<span class="s">&quot;exp_avg_sq&quot;</span>])}
+        <span class="k">else</span>:
+            mopt.state[p] = {k: v.clone() <span class="k">for</span> k, v <span class="k">in</span> by_name[n].items()}
+    <span class="k">return</span> mopt.state_dict()
+
+<span class="k">def</span> build_conversion():
+    blob = load_final(RUN_R1)
+    moe = make_moe()
+    msd = convert_weights(blob[<span class="s">&quot;model&quot;</span>])
+    moe.load_state_dict(msd)
+    <span class="k">return</span> {<span class="s">&quot;model&quot;</span>: msd, <span class="s">&quot;opt&quot;</span>: convert_optimizer(blob[<span class="s">&quot;opt&quot;</span>], moe), <span class="s">&quot;scaler&quot;</span>: blob[<span class="s">&quot;scaler&quot;</span>]}
+
+CONV = build_conversion()
+<span class="c"># check: family f&#x27;s clones hold R1&#x27;s slice f, for weights and for both Adam averages</span>
+_r1 = load_final(RUN_R1)
+_dense = make_dense(); _dopt = make_opt(_dense, TC.lr); _dopt.load_state_dict(_r1[<span class="s">&quot;opt&quot;</span>])
+_moe = make_moe(); _mopt = make_opt(_moe, TC.lr); _mopt.load_state_dict(CONV[<span class="s">&quot;opt&quot;</span>])
+_dn = dict(_dense.named_parameters()); _mn = dict(_moe.named_parameters())
+_ok = <span class="k">True</span>
+<span class="k">for</span> i <span class="k">in</span> (0, MC.n_layer - 1):
+    <span class="k">for</span> f <span class="k">in</span> range(XC.families):
+        <span class="k">for</span> c <span class="k">in</span> (0, XC.clones - 1):
+            e = f * XC.clones + c
+            _ok &amp;= torch.equal(CONV[<span class="s">&quot;model&quot;</span>][f&quot;blocks.{i}.mlp.w_up&quot;][e], _r1[<span class="s">&quot;model&quot;</span>][f&quot;blocks.{i}.mlp.up.weight&quot;][f*Q:(f+1)*Q])
+            _ok &amp;= torch.equal(_mopt.state[_mn[f&quot;blocks.{i}.mlp.w_down&quot;]][<span class="s">&quot;exp_avg_sq&quot;</span>][e],
+                               _dopt.state[_dn[f&quot;blocks.{i}.mlp.down.weight&quot;]][<span class="s">&quot;exp_avg_sq&quot;</span>][:, f*Q:(f+1)*Q])
+    _ok &amp;= _mn[f&quot;blocks.{i}.mlp.router.weight&quot;] <span class="k">not</span> <span class="k">in</span> _mopt.state
+<span class="k">del</span> _r1, _dense, _dopt, _moe, _mopt
+
+print(f&quot;converted R1 -&gt; {N_EXP} experts per layer; router at zero, biases at zero&quot;)
+gate(bool(_ok), <span class="s">&quot;each clone holds its family&#x27;s slice of R1: weights and Adam averages copied; router state empty&quot;</span>)
+R[<span class="s">&quot;gates&quot;</span>][<span class="s">&quot;conversion_state&quot;</span>] = bool(_ok)</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">converted R1 -&gt; 32 experts per layer; router at zero, biases at zero
+  [PASS] each clone holds its family&#x27;s slice of R1: weights and Adam averages copied; router state empty</pre></div><p class="outnote">PASS: every clone holds its slice of R1, weights and Adam averages alike.</p></article><article class="cell"><h3>Cell 13 &middot; Gates: same function, a router that learns, balancing that works</h3><div class="body"><p><b>G1</b> runs R1 and the converted MoE on two validation sequences on the CPU. In fp64 the logits must agree to 1e-10; the fp32 difference is only reported. Four 320-neuron products add the same numbers as one 1,280-neuron product in a different order, and computers round after every addition, so fp32 cannot be bit-exact. The plan first promised bit-exact, and a laptop test corrected it.</p><p><b>G2</b> runs one backward pass: every layer's router must get a gradient with the joint rule, and the flawed per-family rule must get none. <b>G3</b> gives a toy layer a router that favours one expert per family and checks that the bias alone evens it out. <b>G4</b> checks the parameter counts against the formula.</p></div><p class="io"><b>Inputs:</b> <code>CONV</code>, R1. <b>Outputs:</b> four gates; the notebook stops if any fails.</p><details class="src"><summary>Show the full cell source &mdash; 85 lines</summary><pre class="code"><span class="k">def</span> _val_batch(n=2):
+    x, y = VAL_W.get(0, n, device=<span class="s">&quot;cpu&quot;</span>)
+    <span class="k">return</span> x, y
+
+<span class="k">def</span> _g1():
+    blob = load_final(RUN_R1)
+    cpu_sd = {k: v.detach().cpu() <span class="k">for</span> k, v <span class="k">in</span> blob[<span class="s">&quot;model&quot;</span>].items()}
+    x, _ = _val_batch()
+    res = {}
+    <span class="k">for</span> name, dt <span class="k">in</span> ((<span class="s">&quot;fp64&quot;</span>, torch.float64), (<span class="s">&quot;fp32&quot;</span>, torch.float32)):
+        torch.manual_seed(SEED)
+        dense = GPT(MC).to(dt); dense.load_state_dict({k: v.to(dt) <span class="k">for</span> k, v <span class="k">in</span> cpu_sd.items()})
+        moe = make_moe(device=<span class="s">&quot;cpu&quot;</span>).to(dt)
+        moe.load_state_dict({k: v.to(dt) <span class="k">for</span> k, v <span class="k">in</span> convert_weights(cpu_sd).items()})
+        dense.eval(); moe.eval()
+        a, b = dense.logits(x), moe.logits(x)
+        res[name] = ((a - b).abs().max() / a.abs().max()).item()
+    <span class="k">return</span> res
+
+G1 = _g1()
+print(<span class="s">&quot;G1 - the conversion keeps the function (2 validation sequences, CPU)&quot;</span>)
+gate(G1[<span class="s">&quot;fp64&quot;</span>] &lt; TH.g1_fp64_rel, f&quot;fp64 logits: largest relative difference {G1[<span class="s">&#x27;fp64&#x27;</span>]:.1e} (limit {TH.g1_fp64_rel:.0e})&quot;)
+print(f&quot;  [info] fp32 logits: largest relative difference {G1[<span class="s">&#x27;fp32&#x27;</span>]:.1e}  &lt;- the rounding floor, not a mismatch&quot;)
+_moe = make_moe(); _moe.load_state_dict(CONV[<span class="s">&quot;model&quot;</span>])
+G1_val = evaluate(_moe)
+gate(abs(G1_val - R1[<span class="s">&quot;final_val&quot;</span>]) &lt; TH.g1_loss_abs,
+     f&quot;{DEVICE} validation loss: converted MoE {G1_val:.5f} vs R1 {R1[<span class="s">&#x27;final_val&#x27;</span>]:.5f} &quot;
+     f&quot;(difference {abs(G1_val - R1[<span class="s">&#x27;final_val&#x27;</span>]):.1e}, limit {TH.g1_loss_abs:.0e})&quot;)
+R[<span class="s">&quot;gates&quot;</span>][<span class="s">&quot;G1&quot;</span>] = {**G1, <span class="s">&quot;val_moe&quot;</span>: G1_val, <span class="s">&quot;val_r1&quot;</span>: R1[<span class="s">&quot;final_val&quot;</span>]}
+
+<span class="k">def</span> _router_grads(joint):
+    m = make_moe(joint=joint); m.load_state_dict(CONV[<span class="s">&quot;model&quot;</span>]); m.train()
+    x, y = TRAIN_W.get(CONT_START, 4)
+    m(x, y).backward()
+    <span class="k">return</span> [0.0 <span class="k">if</span> b.mlp.router.weight.grad <span class="k">is</span> <span class="k">None</span> <span class="k">else</span> b.mlp.router.weight.grad.norm().item() <span class="k">for</span> b <span class="k">in</span> m.blocks]
+
+print(<span class="s">&quot;G2 - the router gets a gradient&quot;</span>)
+_gj, _gf = _router_grads(<span class="k">True</span>), _router_grads(<span class="k">False</span>)
+gate(min(_gj) &gt; 0, f&quot;joint rescaling (ours): smallest router gradient over {MC.n_layer} layers {min(_gj):.2e} &gt; 0&quot;)
+gate(max(_gf) &lt; 1e-6 * min(_gj), f&quot;per-family rescaling (the flawed rule): largest router gradient {max(_gf):.1e}, &quot;
+     f&quot;over a million times smaller than ours - zero apart from rounding, which is why it was rejected&quot;)
+R[<span class="s">&quot;gates&quot;</span>][<span class="s">&quot;G2&quot;</span>] = {<span class="s">&quot;joint_min&quot;</span>: min(_gj), <span class="s">&quot;joint_max&quot;</span>: max(_gj), <span class="s">&quot;per_family_max&quot;</span>: max(_gf)}
+
+@torch.no_grad()
+<span class="k">def</span> update_bias(layer, gamma):
+    <span class="s">&quot;&quot;&quot;Lesson Section 18: busier than the family average -&gt; bias down; quieter -&gt; bias up.&quot;&quot;&quot;</span>
+    load = layer.counts.view(layer.fam, layer.clones)
+    layer.bias += gamma * torch.sign(load.mean(-1, keepdim=<span class="k">True</span>) - load).view(-1)
+    layer.counts.zero_()
+
+<span class="k">def</span> maxvio(counts, fam, clones):
+    load = counts.view(fam, clones).float()
+    mean = load.mean(-1)
+    <span class="k">return</span> ((load.max(-1).values - mean) / mean.clamp(min=1e-9)).mean().item()
+
+<span class="k">def</span> _g3(steps=600, n=2048):
+    g = torch.Generator().manual_seed(SEED)
+    lay = FamilyMoE(16, 8, 2, 4, 4.0)
+    <span class="k">with</span> torch.no_grad():
+        lay.router.weight.normal_(0, 0.3, generator=g)
+        lay.router.weight[0::4, 0] += 0.3          <span class="c"># a constant pull towards clone 0 of each family</span>
+    lay.train()
+    trace = []
+    <span class="k">for</span> t <span class="k">in</span> range(steps):
+        x = torch.randn(n, 16, generator=g); x[:, 0] = 1.0
+        <span class="k">with</span> torch.no_grad():
+            lay(x)
+        trace.append(maxvio(lay.counts, 2, 4))
+        update_bias(lay, XC.bias_gamma)
+    <span class="k">return</span> trace
+
+print(<span class="s">&quot;G3 - bias balancing on a skewed toy layer (2 families x 4 clones, no training, bias only)&quot;</span>)
+_tr = _g3()
+_start, _end = float(np.mean(_tr[:10])), float(np.mean(_tr[-50:]))
+gate(_end &lt; TH.g3_maxvio <span class="k">and</span> _end &lt; TH.g3_ratio * _start,
+     f&quot;MaxVio {_start:.2f} at the start -&gt; {_end:.2f} after {len(_tr)} steps (limits: &lt; {TH.g3_maxvio}, &lt; half the start)&quot;)
+R[<span class="s">&quot;gates&quot;</span>][<span class="s">&quot;G3&quot;</span>] = {<span class="s">&quot;start&quot;</span>: _start, <span class="s">&quot;end&quot;</span>: _end, <span class="s">&quot;trace&quot;</span>: _tr[::10]}
+
+print(<span class="s">&quot;G4 - parameter counts&quot;</span>)
+_tot, _act = moe_params(_moe)
+gate(_tot == _want_tot, f&quot;MoE total {_tot:,} = dense {PB[<span class="s">&#x27;total&#x27;</span>]:,} - FFN {PB[<span class="s">&#x27;feed-forward&#x27;</span>]:,} + experts and routers&quot;)
+gate(_act - PB[<span class="s">&quot;total&quot;</span>] == MC.n_layer * MC.d * N_EXP,
+     f&quot;active {_act:,} = the dense model&#x27;s {PB[<span class="s">&#x27;total&#x27;</span>]:,} + routers {MC.n_layer * MC.d * N_EXP:,}: same work per token&quot;)
+R[<span class="s">&quot;gates&quot;</span>][<span class="s">&quot;G4&quot;</span>] = {<span class="s">&quot;total&quot;</span>: _tot, <span class="s">&quot;active&quot;</span>: _act}
+<span class="k">del</span> _moe</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">G1 - the conversion keeps the function (2 validation sequences, CPU)
+  [PASS] fp64 logits: largest relative difference 1.3e-14 (limit 1e-10)
+  [info] fp32 logits: largest relative difference 2.1e-06  &lt;- the rounding floor, not a mismatch
+  [PASS] cuda validation loss: converted MoE 4.12303 vs R1 4.12303 (difference 5.3e-06, limit 2e-03)
+G2 - the router gets a gradient
+  [PASS] joint rescaling (ours): smallest router gradient over 16 layers 2.20e-02 &gt; 0
+  [PASS] per-family rescaling (the flawed rule): largest router gradient 0.0e+00, over a million times smaller than ours - zero apart from rounding, which is why it was rejected
+G3 - bias balancing on a skewed toy layer (2 families x 4 clones, no training, bias only)
+  [PASS] MaxVio 0.67 at the start -&gt; 0.05 after 600 steps (limits: &lt; 0.3, &lt; half the start)
+G4 - parameter counts
+  [PASS] MoE total 114,381,440 = dense 22,467,200 - FFN 13,107,200 + experts and routers
+  [PASS] active 22,631,040 = the dense model&#x27;s 22,467,200 + routers 163,840: same work per token</pre></div><p class="outnote">fp64 1.3e-14 (the maths matches), fp32 2.1e-06 (rounding), and the per-family rule's router gradient is exactly 0.0.</p></article></section><section class="grp"><h2><span class="gtag">Cells 14 &ndash; 17</span><span class="gname">The two diagnostics that found the fix</span></h2><article class="cell"><h3>Cell 14 &middot; The v2 preview (switched off in v3)</h3><div class="body"><p>The first MoE run: the converted model trained for 450 steps with the router at full speed and the experts at the normal learning rate. It is where the assignment went wrong. The loss <b>rose</b> (+0.0394) instead of falling, and after the switch to hard selection the load collapsed (MaxVio 1.96).</p><p>The cell also defines the helpers every later MoE run uses: <code>moe_after_step</code> (bias updates, the switch from random to best-score selection, a load log every 25 steps), the clone distance, and the balance-loss hook. In v3 the run itself is off (<code>RUN_PREVIEW = False</code>); its results are in the plan's Section 8.</p></div><p class="io"><b>Inputs:</b> <code>CONV</code>. <b>Outputs:</b> the helpers; no run in v3.</p><details class="src"><summary>Show the full cell source &mdash; 60 lines</summary><pre class="code">_WIN = {}
+
+@torch.no_grad()
+<span class="k">def</span> clone_distance(model):
+    <span class="s">&quot;&quot;&quot;Mean over layers and families of the average pairwise distance between the clones&#x27;
+    up-weights, relative to their size. 0 at conversion.&quot;&quot;&quot;</span>
+    out = []
+    <span class="k">for</span> b <span class="k">in</span> model.blocks:
+        w = b.mlp.w_up.detach().float().view(XC.families, XC.clones, -1)
+        dist = torch.cdist(w, w)                                    <span class="c"># [fam, C, C]</span>
+        scale = w.norm(dim=-1).mean(-1, keepdim=<span class="k">True</span>)               <span class="c"># [fam, 1]</span>
+        iu = torch.triu_indices(XC.clones, XC.clones, 1)
+        out.append((dist[:, iu[0], iu[1]] / scale).mean().item())
+    <span class="k">return</span> float(np.mean(out))
+
+<span class="k">def</span> moe_after_step(model, step, hist):
+    layers = [b.mlp <span class="k">for</span> b <span class="k">in</span> model.blocks]
+    <span class="k">if</span> <span class="s">&quot;win&quot;</span> <span class="k">not</span> <span class="k">in</span> _WIN:
+        _WIN[<span class="s">&quot;win&quot;</span>] = torch.zeros(len(layers), N_EXP, device=layers[0].counts.device)
+    ex = hist[<span class="s">&quot;extra&quot;</span>]
+    <span class="k">for</span> li, lay <span class="k">in</span> enumerate(layers):
+        _WIN[<span class="s">&quot;win&quot;</span>][li] += lay.counts
+        update_bias(lay, XC.bias_gamma)
+        lay.probabilistic = step + 1 &lt; XC.prob_steps
+    <span class="k">if</span> (step + 1) % TC.log_every == 0 <span class="k">or</span> step + 1 == hist[<span class="s">&quot;steps&quot;</span>]:
+        win = _WIN[<span class="s">&quot;win&quot;</span>]
+        mv = float(np.mean([maxvio(win[li], XC.families, XC.clones) <span class="k">for</span> li <span class="k">in</span> range(len(layers))]))
+        ex.setdefault(<span class="s">&quot;moe_log&quot;</span>, []).append({
+            <span class="s">&quot;step&quot;</span>: step + 1, <span class="s">&quot;maxvio&quot;</span>: mv, <span class="s">&quot;dead&quot;</span>: int((win == 0).sum().item()),
+            <span class="s">&quot;clone_dist&quot;</span>: clone_distance(model),
+            <span class="s">&quot;bias_absmax&quot;</span>: max(l.bias.abs().max().item() <span class="k">for</span> l <span class="k">in</span> layers),
+            <span class="s">&quot;share&quot;</span>: (win.view(len(layers), XC.families, XC.clones) /
+                      win.view(len(layers), XC.families, XC.clones).sum(-1, keepdim=<span class="k">True</span>)).cpu().tolist()})
+        _WIN[<span class="s">&quot;win&quot;</span>].zero_()
+
+<span class="k">def</span> moe_extra_loss(model):
+    <span class="k">return</span> XC.seq_aux * sum(b.mlp.aux <span class="k">for</span> b <span class="k">in</span> model.blocks) / MC.n_layer
+
+MOE_CODE = (FamilyMoE, make_moe, make_moe_prob, convert_weights, convert_optimizer, _expand_up, _expand_down,
+            build_conversion, update_bias, maxvio, clone_distance, moe_after_step, moe_extra_loss)
+RUN_PREVIEW = <span class="k">False</span>   <span class="c"># the v2 preview: results are in the plan (Section 8); True reruns it (~7 min)</span>
+PREVIEW, _ml = <span class="k">None</span>, <span class="k">None</span>
+<span class="k">if</span> RUN_PREVIEW:
+    RUN_P = <span class="s">&quot;P_moe_preview&quot;</span>
+    _WIN.clear()
+    PREVIEW = cached_run(RUN_P, DENSE_CODE + MOE_CODE, make_model=make_moe_prob, steps=XC.preview_steps,
+                         warmup=0, decay=0, window_start=CONT_START, init=CONV,
+                         extra_loss=moe_extra_loss, after_step=moe_after_step)
+    _ml = PREVIEW[<span class="s">&quot;extra&quot;</span>][<span class="s">&quot;moe_log&quot;</span>]
+    _v0, _v1 = PREVIEW[<span class="s">&quot;val&quot;</span>][0][<span class="s">&quot;loss&quot;</span>], PREVIEW[<span class="s">&quot;final_val&quot;</span>]
+    print(f&quot;\npreview: validation {_v0:.4f} at conversion -&gt; {_v1:.4f} after {XC.preview_steps} steps &quot;
+          f&quot;({<span class="s">&#x27;lower&#x27;</span> <span class="k">if</span> _v1 &lt; _v0 <span class="k">else</span> <span class="s">&#x27;HIGHER&#x27;</span>} by {abs(_v0 - _v1):.4f})&quot;)
+    print(f&quot;         dead experts in the last window: {_ml[-1][<span class="s">&#x27;dead&#x27;</span>]} of {MC.n_layer * N_EXP}; &quot;
+          f&quot;MaxVio {_ml[-1][<span class="s">&#x27;maxvio&#x27;</span>]:.3f}; clone distance {_ml[0][<span class="s">&#x27;clone_dist&#x27;</span>]:.4f} -&gt; {_ml[-1][<span class="s">&#x27;clone_dist&#x27;</span>]:.4f}&quot;)
+    <span class="k">if</span> PREVIEW.get(<span class="s">&quot;tokens_per_second&quot;</span>):
+        print(f&quot;         speed {PREVIEW[<span class="s">&#x27;tokens_per_second&#x27;</span>]:,.0f} tokens/s (R1 dense: {R1[<span class="s">&#x27;tokens_per_second&#x27;</span>] <span class="k">or</span> 0:,.0f})&quot;
+              + (f&quot;, peak memory {PREVIEW[<span class="s">&#x27;peak_mem_bytes&#x27;</span>]/2**20:,.0f} MiB&quot; <span class="k">if</span> PREVIEW.get(<span class="s">&quot;peak_mem_bytes&quot;</span>) <span class="k">else</span> <span class="s">&quot;&quot;</span>))
+    R[<span class="s">&quot;runs&quot;</span>][<span class="s">&quot;P&quot;</span>] = PREVIEW
+<span class="k">else</span>:
+    print(<span class="s">&quot;v2 preview skipped (RUN_PREVIEW = False): its results are recorded in the plan, Section 8.&quot;</span>)</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">v2 preview skipped (RUN_PREVIEW = False): its results are recorded in the plan, Section 8.</pre></div></article><article class="cell"><h3>Cell 15 &middot; The preview's figure (skipped with it)</h3><div class="body"><p>Draws the preview's loss across the conversion, its balance over time and a load heatmap, only when the preview ran.</p></div><p class="io"><b>Inputs:</b> the preview. <b>Outputs:</b> <code>v2_preview.png</code> (from v2).</p><details class="src"><summary>Show the full cell source &mdash; 24 lines</summary><pre class="code"><span class="k">if</span> PREVIEW:
+    fig, ax = plt.subplots(1, 3, figsize=(13, 3.6))
+    _r1v = [p <span class="k">for</span> p <span class="k">in</span> R1[<span class="s">&quot;val&quot;</span>] <span class="k">if</span> p[<span class="s">&quot;tokens&quot;</span>] &gt;= R1[<span class="s">&quot;val&quot;</span>][-1][<span class="s">&quot;tokens&quot;</span>] - 20e6]
+    ax[0].plot([p[<span class="s">&quot;tokens&quot;</span>]/1e6 <span class="k">for</span> p <span class="k">in</span> _r1v], [p[<span class="s">&quot;loss&quot;</span>] <span class="k">for</span> p <span class="k">in</span> _r1v], color=<span class="s">&quot;#b1521f&quot;</span>, marker=<span class="s">&quot;o&quot;</span>, ms=3, label=<span class="s">&quot;R1 dense&quot;</span>)
+    _off = R1[<span class="s">&quot;val&quot;</span>][-1][<span class="s">&quot;tokens&quot;</span>]
+    ax[0].plot([(p[<span class="s">&quot;tokens&quot;</span>] + _off)/1e6 <span class="k">for</span> p <span class="k">in</span> PREVIEW[<span class="s">&quot;val&quot;</span>]], [p[<span class="s">&quot;loss&quot;</span>] <span class="k">for</span> p <span class="k">in</span> PREVIEW[<span class="s">&quot;val&quot;</span>]],
+               color=<span class="s">&quot;#1f6f8b&quot;</span>, marker=<span class="s">&quot;o&quot;</span>, ms=3, label=<span class="s">&quot;MoE preview&quot;</span>)
+    ax[0].axvline(_off/1e6, color=<span class="s">&quot;#7a4b9e&quot;</span>, ls=<span class="s">&quot;--&quot;</span>, lw=0.8)
+    ax[0].set_xlabel(<span class="s">&quot;training tokens (millions)&quot;</span>); ax[0].set_ylabel(<span class="s">&quot;validation loss&quot;</span>); ax[0].legend(frameon=<span class="k">False</span>)
+    ax[0].set_title(<span class="s">&quot;conversion at the dashed line&quot;</span>, fontsize=9)
+    _st = [m[<span class="s">&quot;step&quot;</span>] <span class="k">for</span> m <span class="k">in</span> _ml]
+    ax[1].plot(_st, [m[<span class="s">&quot;maxvio&quot;</span>] <span class="k">for</span> m <span class="k">in</span> _ml], color=<span class="s">&quot;#b1521f&quot;</span>, label=<span class="s">&quot;MaxVio&quot;</span>)
+    ax[1].plot(_st, [m[<span class="s">&quot;clone_dist&quot;</span>] <span class="k">for</span> m <span class="k">in</span> _ml], color=<span class="s">&quot;#2c6b45&quot;</span>, label=<span class="s">&quot;clone distance&quot;</span>)
+    ax[1].set_xlabel(<span class="s">&quot;preview step&quot;</span>); ax[1].legend(frameon=<span class="k">False</span>)
+    ax2 = ax[1].twinx(); ax2.bar(_st, [m[<span class="s">&quot;dead&quot;</span>] <span class="k">for</span> m <span class="k">in</span> _ml], width=8, color=<span class="s">&quot;#9a968e&quot;</span>, alpha=0.5)
+    ax2.set_ylabel(<span class="s">&quot;dead experts (grey bars)&quot;</span>)
+    _share = np.array(_ml[-1][<span class="s">&quot;share&quot;</span>]).reshape(MC.n_layer, N_EXP)
+    im = ax[2].imshow(_share, aspect=<span class="s">&quot;auto&quot;</span>, cmap=<span class="s">&quot;viridis&quot;</span>, vmin=0, vmax=max(0.25, _share.max()))
+    <span class="k">for</span> f <span class="k">in</span> range(1, XC.families):
+        ax[2].axvline(f * XC.clones - 0.5, color=<span class="s">&quot;white&quot;</span>, lw=1)
+    ax[2].set_xlabel(<span class="s">&quot;expert (4 families of 8)&quot;</span>); ax[2].set_ylabel(<span class="s">&quot;layer&quot;</span>)
+    ax[2].set_title(<span class="s">&quot;share of the family&#x27;s tokens, last 25 steps&quot;</span>, fontsize=9)
+    fig.colorbar(im, ax=ax[2], fraction=0.046)
+    _save(fig, <span class="s">&quot;v2_preview.png&quot;</span>)</pre></details></article><article class="cell"><h3>Cell 16 &middot; The first diagnostic, v2.1 (switched off in v3)</h3><div class="body"><p>Seven 200-step runs from the conversion point, each changing one thing. <code>DiagMoE</code> can pick experts the normal way, always use the first clone (the dense model in MoE form), or use a fixed table from token id to clone (built from token frequencies so each clone gets an eighth of the traffic).</p><p>Its two answers: a 10&times; slower router stops the collapse (MaxVio after the switch 0.16 against 1.96), and the loss rises whenever tokens are <b>split</b> across clones, even with the fixed table (+0.0670 against dense). The plan's Section 10 has the full table.</p></div><p class="io"><b>Inputs:</b> <code>CONV</code>. <b>Outputs:</b> <code>DiagMoE</code>, <code>make_diag</code>, <code>diag_run</code>; no runs in v3.</p><details class="src"><summary>Show the full cell source &mdash; 166 lines</summary><pre class="code">@dataclass(frozen=<span class="k">True</span>)
+<span class="k">class</span> DiagCfg:
+    steps: int = 200
+    switch: int = 100
+    warmup_e: int = 100
+    router_scale_d: float = 0.1
+    eval_every_steps: int = 50
+    b_vs_a_tol: float = 0.01        <span class="c"># gate: B (dense in MoE clothing) must track A to this</span>
+
+DC_ = DiagCfg()
+<span class="k">if</span> PROFILE == <span class="s">&quot;cpu&quot;</span>:
+    DC_ = replace(DC_, steps=40, switch=20, warmup_e=20, eval_every_steps=10)
+<span class="k">elif</span> PROFILE == <span class="s">&quot;smoke&quot;</span>:
+    DC_ = replace(DC_, steps=60, switch=30, warmup_e=30, eval_every_steps=20)
+
+_CUR = {}
+
+<span class="k">class</span> DiagMoE(FamilyMoE):
+    <span class="s">&quot;&quot;&quot;FamilyMoE with switchable clone choice, for the diagnostic only.
+    mode &#x27;design&#x27; = as v2; &#x27;fixed0&#x27; = always clone 1; &#x27;hash&#x27; = a fixed table by token id.&quot;&quot;&quot;</span>
+    mode, zscale, table = <span class="s">&quot;design&quot;</span>, 1.0, <span class="k">None</span>
+
+    <span class="k">def</span> route(self, x2):
+        hi = torch.promote_types(x2.dtype, torch.float32)
+        <span class="k">with</span> torch.autocast(x2.device.type, enabled=<span class="k">False</span>):
+            z = self.zscale * (x2.to(hi) @ self.router.weight.to(hi).t())
+        s = torch.softmax(z, dim=-1)
+        <span class="k">if</span> self.mode == <span class="s">&quot;fixed0&quot;</span>:
+            pick = torch.zeros(x2.size(0), self.fam, dtype=torch.long, device=x2.device)
+        <span class="k">elif</span> self.mode == <span class="s">&quot;hash&quot;</span>:
+            pick = self.table[_CUR[<span class="s">&quot;ids&quot;</span>].reshape(-1)]
+        <span class="k">else</span>:
+            key = (z + self.bias.to(hi)).view(-1, self.fam, self.clones)
+            <span class="k">if</span> self.training <span class="k">and</span> self.probabilistic:
+                pick = torch.multinomial(torch.softmax(key.reshape(-1, self.clones), -1), 1).view(-1, self.fam)
+            <span class="k">else</span>:
+                pick = key.argmax(-1)
+        eid = pick + torch.arange(self.fam, device=x2.device) * self.clones
+        chosen = s.gather(1, eid)
+        <span class="k">return</span> z, eid, self.scale * chosen / chosen.sum(-1, keepdim=<span class="k">True</span>)
+
+<span class="k">def</span> _hash_table():
+    <span class="s">&quot;&quot;&quot;Token id -&gt; clone, per family. Greedy: frequent tokens first, each to the least-loaded
+    clone, so every clone gets about 1/8 of the token *occurrences*. Families use different
+    random tie-breaks, so they split the vocabulary differently.&quot;&quot;&quot;</span>
+    freq = np.bincount(np.asarray(TRAIN[:min(len(TRAIN), 20_000_000)]), minlength=MC.vocab).astype(np.float64)
+    order = np.argsort(-freq, kind=<span class="s">&quot;stable&quot;</span>)
+    rng = np.random.default_rng(SEED)
+    tab = np.zeros((MC.vocab, XC.families), dtype=np.int64)
+    <span class="k">for</span> f <span class="k">in</span> range(XC.families):
+        load = rng.random(XC.clones) * 1e-9
+        <span class="k">for</span> t <span class="k">in</span> order:
+            c = int(np.argmin(load)); tab[t, f] = c; load[c] += freq[t]
+    <span class="k">return</span> torch.from_numpy(tab)
+
+HASH_TABLE = _hash_table()
+
+<span class="k">def</span> make_diag(mode=<span class="s">&quot;design&quot;</span>, zscale=1.0, freeze_router=<span class="k">False</span>, prob=<span class="k">True</span>):
+    m = make_moe()
+    <span class="k">for</span> b <span class="k">in</span> m.blocks:
+        old = b.mlp
+        new = DiagMoE(MC.d, Q, XC.families, XC.clones, XC.scale)
+        new.mode, new.zscale = mode, zscale
+        new.table = HASH_TABLE.to(DEVICE) <span class="k">if</span> mode == <span class="s">&quot;hash&quot;</span> <span class="k">else</span> <span class="k">None</span>
+        new.probabilistic = prob <span class="k">and</span> mode == <span class="s">&quot;design&quot;</span> <span class="k">and</span> XC.prob_steps &gt; 0
+        <span class="k">if</span> freeze_router:
+            new.router.weight.requires_grad_(<span class="k">False</span>)
+        b.mlp = new.to(DEVICE)
+        <span class="k">del</span> old
+    m.register_forward_pre_hook(<span class="k">lambda</span> mod, args: _CUR.__setitem__(<span class="s">&quot;ids&quot;</span>, args[0]))
+    <span class="k">return</span> m
+
+<span class="k">def</span> diag_run(key, make_model, init, warmup=0, extra_loss=<span class="k">None</span>, after_step=<span class="k">None</span>, prob_steps=<span class="k">None</span>):
+    <span class="s">&quot;&quot;&quot;Train a short diagnostic run; cache only its small log, delete the big checkpoints.&quot;&quot;&quot;</span>
+    <span class="k">global</span> TC, XC
+    path = cache(f&quot;diag_{BASE_KEY}_{key}.json&quot;)
+    src = _src_hash(DiagMoE, make_diag, diag_run, _hash_table, train_run, FamilyMoE, moe_after_step,
+                    update_bias, convert_weights, convert_optimizer) + json.dumps(asdict(DC_))
+    <span class="k">if</span> <span class="k">not</span> RESET_CACHE <span class="k">and</span> os.path.exists(path):
+        blob = json.load(open(path, encoding=<span class="s">&quot;utf-8&quot;</span>))
+        <span class="k">if</span> blob.get(<span class="s">&quot;src&quot;</span>) == src:
+            print(f&quot;    [cached diag] &#x27;{key}&#x27; reloaded&quot;)
+            <span class="k">return</span> blob[<span class="s">&quot;hist&quot;</span>]
+    old_tc, old_xc = TC, XC
+    TC = replace(TC, eval_every_tokens=DC_.eval_every_steps * TC.batch * MC.seq)
+    <span class="k">if</span> prob_steps <span class="k">is</span> <span class="k">not</span> <span class="k">None</span>:
+        XC = replace(XC, prob_steps=prob_steps)
+    _WIN.clear()
+    <span class="k">try</span>:
+        hist = train_run(key, make_model, steps=DC_.steps, warmup=warmup, decay=0,
+                         window_start=CONT_START, init=init, extra_loss=extra_loss, after_step=after_step)
+    <span class="k">finally</span>:
+        TC, XC = old_tc, old_xc
+    <span class="k">for</span> pth <span class="k">in</span> (_final_path(key), _ckpt_path(key)):
+        <span class="k">if</span> os.path.exists(pth):
+            os.remove(pth)
+    _atomic_save({<span class="s">&quot;src&quot;</span>: src, <span class="s">&quot;hist&quot;</span>: hist}, path, as_json=<span class="k">True</span>)
+    <span class="k">return</span> hist
+
+_R1_BLOB = load_final(RUN_R1)
+DIAG = {}
+_plan = [
+    (<span class="s">&quot;A&quot;</span>, <span class="s">&quot;dense continues&quot;</span>, <span class="k">lambda</span>: diag_run(<span class="s">&quot;D_A_dense&quot;</span>, make_dense, _R1_BLOB)),
+    (<span class="s">&quot;B&quot;</span>, <span class="s">&quot;one clone, router frozen&quot;</span>, <span class="k">lambda</span>: diag_run(<span class="s">&quot;D_B_fixed_frozen&quot;</span>, <span class="k">lambda</span>: make_diag(<span class="s">&quot;fixed0&quot;</span>, freeze_router=<span class="k">True</span>), CONV,
+                                                      after_step=moe_after_step)),
+    (<span class="s">&quot;C&quot;</span>, <span class="s">&quot;one clone, router learns&quot;</span>, <span class="k">lambda</span>: diag_run(<span class="s">&quot;D_C_fixed_router&quot;</span>, <span class="k">lambda</span>: make_diag(<span class="s">&quot;fixed0&quot;</span>), CONV,
+                                                      after_step=moe_after_step)),
+    (<span class="s">&quot;G&quot;</span>, <span class="s">&quot;design, switch at step 100&quot;</span>, <span class="k">lambda</span>: diag_run(<span class="s">&quot;D_G_design&quot;</span>, <span class="k">lambda</span>: make_diag(<span class="s">&quot;design&quot;</span>), CONV,
+                                                        extra_loss=moe_extra_loss, after_step=moe_after_step, prob_steps=DC_.switch)),
+    (<span class="s">&quot;D&quot;</span>, <span class="s">&quot;design, router 10x slower&quot;</span>, <span class="k">lambda</span>: diag_run(<span class="s">&quot;D_D_slow_router&quot;</span>, <span class="k">lambda</span>: make_diag(<span class="s">&quot;design&quot;</span>, zscale=DC_.router_scale_d), CONV,
+                                                       extra_loss=moe_extra_loss, after_step=moe_after_step, prob_steps=DC_.switch)),
+    (<span class="s">&quot;E&quot;</span>, <span class="s">&quot;design, 100-step warm-up&quot;</span>, <span class="k">lambda</span>: diag_run(<span class="s">&quot;D_E_warmup&quot;</span>, <span class="k">lambda</span>: make_diag(<span class="s">&quot;design&quot;</span>), CONV, warmup=DC_.warmup_e,
+                                                      extra_loss=moe_extra_loss, after_step=moe_after_step, prob_steps=DC_.switch)),
+    (<span class="s">&quot;F&quot;</span>, <span class="s">&quot;clone by token id (hash)&quot;</span>, <span class="k">lambda</span>: diag_run(<span class="s">&quot;D_F_hash&quot;</span>, <span class="k">lambda</span>: make_diag(<span class="s">&quot;hash&quot;</span>), CONV,
+                                                      after_step=moe_after_step)),
+]
+RUN_V21 = <span class="k">False</span>   <span class="c"># v2.1&#x27;s seven runs are recorded in the plan (Section 10); True reruns them (~20 min on a T4)</span>
+
+<span class="k">def</span> _v(h, step):
+    <span class="k">return</span> next(p[<span class="s">&quot;loss&quot;</span>] <span class="k">for</span> p <span class="k">in</span> h[<span class="s">&quot;val&quot;</span>] <span class="k">if</span> p[<span class="s">&quot;step&quot;</span>] == step)
+
+_COLS = {<span class="s">&quot;A&quot;</span>: <span class="s">&quot;#b1521f&quot;</span>, <span class="s">&quot;B&quot;</span>: <span class="s">&quot;#9a968e&quot;</span>, <span class="s">&quot;C&quot;</span>: <span class="s">&quot;#7a4b9e&quot;</span>, <span class="s">&quot;G&quot;</span>: <span class="s">&quot;#1f6f8b&quot;</span>, <span class="s">&quot;D&quot;</span>: <span class="s">&quot;#2c6b45&quot;</span>, <span class="s">&quot;E&quot;</span>: <span class="s">&quot;#c9a227&quot;</span>,
+         <span class="s">&quot;F&quot;</span>: <span class="s">&quot;#d1495b&quot;</span>, <span class="s">&quot;Aw&quot;</span>: <span class="s">&quot;#e08e45&quot;</span>, <span class="s">&quot;D35&quot;</span>: <span class="s">&quot;#6aa84f&quot;</span>, <span class="s">&quot;D12&quot;</span>: <span class="s">&quot;#274e13&quot;</span>, <span class="s">&quot;F35&quot;</span>: <span class="s">&quot;#8e44ad&quot;</span>}
+
+<span class="k">def</span> report_diag(runs, png, switch, one_clone=(<span class="s">&quot;B&quot;</span>, <span class="s">&quot;C&quot;</span>)):
+    <span class="s">&quot;&quot;&quot;Print the table of a diagnostic round and draw its figure. Returns run A&#x27;s final loss.&quot;&quot;&quot;</span>
+    steps = [p[<span class="s">&quot;step&quot;</span>] <span class="k">for</span> p <span class="k">in</span> runs[<span class="s">&quot;A&quot;</span>][<span class="s">&quot;hist&quot;</span>][<span class="s">&quot;val&quot;</span>]]
+    a_end = runs[<span class="s">&quot;A&quot;</span>][<span class="s">&quot;hist&quot;</span>][<span class="s">&quot;final_val&quot;</span>]
+    print(f&quot;\n{<span class="s">&#x27;run&#x27;</span>:&lt;5}{<span class="s">&#x27;what differs&#x27;</span>:&lt;34}&quot; + <span class="s">&quot;&quot;</span>.join(f&quot;{<span class="s">&#x27;val@&#x27;</span>+str(s):&gt;11}&quot; <span class="k">for</span> s <span class="k">in</span> steps)
+          + f&quot;{<span class="s">&#x27;vs A&#x27;</span>:&gt;9}{<span class="s">&#x27;MaxVio&#x27;</span>:&gt;8}{<span class="s">&#x27;dead&#x27;</span>:&gt;6}{<span class="s">&#x27;tok/s&#x27;</span>:&gt;9}&quot;)
+    <span class="k">for</span> name, d <span class="k">in</span> runs.items():
+        h = d[<span class="s">&quot;hist&quot;</span>]
+        ml = h[<span class="s">&quot;extra&quot;</span>].get(<span class="s">&quot;moe_log&quot;</span>, [])
+        skip = name <span class="k">in</span> one_clone <span class="k">or</span> <span class="k">not</span> ml
+        mv = <span class="s">&quot;n/a&quot;</span> <span class="k">if</span> skip <span class="k">else</span> f&quot;{ml[-1][<span class="s">&#x27;maxvio&#x27;</span>]:.2f}&quot;
+        dead = <span class="s">&quot;n/a&quot;</span> <span class="k">if</span> skip <span class="k">else</span> f&quot;{ml[-1][<span class="s">&#x27;dead&#x27;</span>]}&quot;
+        tps = f&quot;{h[<span class="s">&#x27;tokens_per_second&#x27;</span>]:,.0f}&quot; <span class="k">if</span> h.get(<span class="s">&quot;tokens_per_second&quot;</span>) <span class="k">else</span> <span class="s">&quot;-&quot;</span>
+        print(f&quot;{name:&lt;5}{d[<span class="s">&#x27;label&#x27;</span>]:&lt;34}&quot; + <span class="s">&quot;&quot;</span>.join(f&quot;{_v(h, s):&gt;11.4f}&quot; <span class="k">for</span> s <span class="k">in</span> steps)
+              + f&quot;{h[<span class="s">&#x27;final_val&#x27;</span>] - a_end:&gt;+9.4f}{mv:&gt;8}{dead:&gt;6}{tps:&gt;9}&quot;)
+    fig, ax = plt.subplots(1, 2, figsize=(12, 3.8))
+    <span class="k">for</span> name, d <span class="k">in</span> runs.items():
+        h = d[<span class="s">&quot;hist&quot;</span>]
+        ax[0].plot([p[<span class="s">&quot;step&quot;</span>] <span class="k">for</span> p <span class="k">in</span> h[<span class="s">&quot;val&quot;</span>]], [p[<span class="s">&quot;loss&quot;</span>] <span class="k">for</span> p <span class="k">in</span> h[<span class="s">&quot;val&quot;</span>]], marker=<span class="s">&quot;o&quot;</span>, ms=3,
+                   color=_COLS.get(name, <span class="s">&quot;#333333&quot;</span>), ls=<span class="s">&quot;--&quot;</span> <span class="k">if</span> name <span class="k">in</span> (<span class="s">&quot;B&quot;</span>, <span class="s">&quot;Aw&quot;</span>) <span class="k">else</span> <span class="s">&quot;-&quot;</span>, label=f&quot;{name} {d[<span class="s">&#x27;label&#x27;</span>]}&quot;)
+        ml = h[<span class="s">&quot;extra&quot;</span>].get(<span class="s">&quot;moe_log&quot;</span>, [])
+        <span class="k">if</span> ml <span class="k">and</span> name <span class="k">not</span> <span class="k">in</span> one_clone:
+            ax[1].plot([m[<span class="s">&quot;step&quot;</span>] <span class="k">for</span> m <span class="k">in</span> ml], [m[<span class="s">&quot;maxvio&quot;</span>] <span class="k">for</span> m <span class="k">in</span> ml], color=_COLS.get(name, <span class="s">&quot;#333333&quot;</span>), label=name)
+    <span class="k">for</span> x <span class="k">in</span> ax:
+        x.axvline(switch, color=<span class="s">&quot;#9a968e&quot;</span>, ls=<span class="s">&quot;:&quot;</span>, lw=0.8)
+    ax[0].set_xlabel(<span class="s">&quot;steps after conversion&quot;</span>); ax[0].set_ylabel(<span class="s">&quot;validation loss&quot;</span>); ax[0].legend(frameon=<span class="k">False</span>, fontsize=7)
+    ax[1].set_xlabel(<span class="s">&quot;steps after conversion&quot;</span>); ax[1].set_ylabel(<span class="s">&quot;MaxVio&quot;</span>); ax[1].legend(frameon=<span class="k">False</span>, fontsize=7)
+    ax[1].set_title(f&quot;dotted: switch to hard selection (step {switch})&quot;, fontsize=9)
+    _save(fig, png)
+    <span class="k">return</span> a_end
+
+<span class="k">if</span> RUN_V21:
+    <span class="k">for</span> name, label, fn <span class="k">in</span> _plan:
+        print(f&quot;\n--- run {name}: {label}&quot;)
+        DIAG[name] = {<span class="s">&quot;label&quot;</span>: label, <span class="s">&quot;hist&quot;</span>: fn()}
+    _a_end = report_diag(DIAG, <span class="s">&quot;v21_diagnostic.png&quot;</span>, DC_.switch)
+    gate(abs(DIAG[<span class="s">&quot;B&quot;</span>][<span class="s">&quot;hist&quot;</span>][<span class="s">&quot;final_val&quot;</span>] - _a_end) &lt; DC_.b_vs_a_tol,
+         f&quot;B (the dense model in MoE clothing) tracks A: {DIAG[<span class="s">&#x27;B&#x27;</span>][<span class="s">&#x27;hist&#x27;</span>][<span class="s">&#x27;final_val&#x27;</span>]:.4f} vs {_a_end:.4f} &quot;
+         f&quot;(limit {DC_.b_vs_a_tol})&quot;)
+    R[<span class="s">&quot;diag&quot;</span>] = {<span class="s">&quot;cfg&quot;</span>: asdict(DC_), <span class="s">&quot;runs&quot;</span>: {k: {<span class="s">&quot;label&quot;</span>: d[<span class="s">&quot;label&quot;</span>], <span class="s">&quot;hist&quot;</span>: d[<span class="s">&quot;hist&quot;</span>]} <span class="k">for</span> k, d <span class="k">in</span> DIAG.items()}}
+<span class="k">else</span>:
+    print(<span class="s">&quot;v2.1 diagnostic skipped (RUN_V21 = False): its results are recorded in the plan, Section 10.&quot;</span>)</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">v2.1 diagnostic skipped (RUN_V21 = False): its results are recorded in the plan, Section 10.</pre></div></article><article class="cell"><h3>Cell 17 &middot; The second diagnostic, v2.2: the fix (switched off in v3)</h3><div class="body"><p>Tested the leading explanation: each clone learns from about an eighth of the tokens, so its gradient is noisier, but Adam still takes full-size steps. <code>ScaledDiagMoE</code> stores each expert as <i>w</i>&nbsp;/&nbsp;<i>c</i> and uses <i>c</i>&nbsp;&times;&nbsp;(<i>w</i>&nbsp;/&nbsp;<i>c</i>): the same function, but Adam's fixed-size steps now move the real weights <i>c</i> times less. The copied Adam averages are rescaled to match (momentum &times;&nbsp;<i>c</i>, squared average &times;&nbsp;<i>c</i>&sup2;).</p><p>With the experts at 1/8 speed the MoE went from +0.0724 behind dense to <b>-0.0331</b> ahead after 200 steps. The same run also settled what v2.1's warm-up run had suggested: a dense model with the same warm-up dipped too (-0.0683), so that early dip was the learning rate, not the MoE.</p></div><p class="io"><b>Inputs:</b> <code>CONV</code>. <b>Outputs:</b> <code>ScaledDiagMoE</code>, <code>scaled_init</code>; an exactness gate; no runs in v3.</p><details class="src"><summary>Show the full cell source &mdash; 105 lines</summary><pre class="code">@dataclass(frozen=<span class="k">True</span>)
+<span class="k">class</span> Diag2Cfg:
+    expert_lr: tuple = (0.35, 0.125)
+
+D2C = Diag2Cfg()
+
+<span class="k">class</span> ScaledDiagMoE(DiagMoE):
+    <span class="s">&quot;&quot;&quot;DiagMoE whose experts are stored divided by c and used multiplied by c:
+    the same function, but under Adam the experts learn c times more slowly.&quot;&quot;&quot;</span>
+    c = 1.0
+
+    <span class="k">def</span> forward(self, x):
+        shp = x.shape
+        x2 = x.reshape(-1, self.d)
+        z, eid, w = self.route(x2)
+        cnt = torch.bincount(eid.reshape(-1), minlength=self.E)
+        <span class="k">if</span> self.training:
+            self.counts += cnt.to(self.counts.dtype)
+        cnt_l = cnt.tolist()
+        out = torch.zeros_like(x2)
+        c = self.c
+        <span class="k">for</span> f <span class="k">in</span> range(self.fam):
+            order = torch.argsort(eid[:, f])
+            xs, ys, start = x2[order], [], 0
+            <span class="k">for</span> k <span class="k">in</span> range(self.clones):
+                e, n = f * self.clones + k, cnt_l[f * self.clones + k]
+                <span class="k">if</span> n == 0:
+                    <span class="k">continue</span>
+                h = F.gelu(xs[start:start + n] @ (c * self.w_up[e]).t())
+                ys.append(h @ (c * self.w_down[e]).t())
+                start += n
+            y = torch.cat(ys) * w[order, f].unsqueeze(1).to(ys[0].dtype)
+            out = out.index_add(0, order, y.to(out.dtype))
+        <span class="k">if</span> self.training <span class="k">and</span> len(shp) == 3:
+            B, T = shp[0], shp[1]
+            local = (eid - torch.arange(self.fam, device=x.device) * self.clones).view(B, T, self.fam)
+            frac = F.one_hot(local, self.clones).float().mean(1)
+            prob = torch.softmax(z.view(B, T, self.fam, self.clones).float(), -1).mean(1)
+            self.aux = (self.clones * (frac * prob).sum(-1)).mean()
+        <span class="k">return</span> out.view(shp)
+
+<span class="k">def</span> make_scaled(mode, zscale, c):
+    m = make_diag(mode, zscale=zscale)
+    <span class="k">for</span> b <span class="k">in</span> m.blocks:
+        new = ScaledDiagMoE(MC.d, Q, XC.families, XC.clones, XC.scale)
+        new.mode, new.zscale, new.table, new.c = b.mlp.mode, b.mlp.zscale, b.mlp.table, c
+        new.probabilistic = b.mlp.probabilistic
+        b.mlp = new.to(DEVICE)
+    <span class="k">return</span> m
+
+<span class="k">def</span> scaled_init(c, mode=<span class="s">&quot;design&quot;</span>, zscale=1.0):
+    <span class="s">&quot;&quot;&quot;CONV rescaled for experts stored as w / c: weights / c, momentum x c, squared average x c^2.&quot;&quot;&quot;</span>
+    sd = {k: (v / c <span class="k">if</span> k.endswith((<span class="s">&quot;mlp.w_up&quot;</span>, <span class="s">&quot;mlp.w_down&quot;</span>)) <span class="k">else</span> v) <span class="k">for</span> k, v <span class="k">in</span> CONV[<span class="s">&quot;model&quot;</span>].items()}
+    m = make_scaled(mode, zscale, c)
+    m.load_state_dict(sd)
+    opt = make_opt(m, TC.lr)
+    opt.load_state_dict(CONV[<span class="s">&quot;opt&quot;</span>])
+    <span class="k">for</span> n, p <span class="k">in</span> m.named_parameters():
+        <span class="k">if</span> n.endswith((<span class="s">&quot;mlp.w_up&quot;</span>, <span class="s">&quot;mlp.w_down&quot;</span>)) <span class="k">and</span> p <span class="k">in</span> opt.state:
+            st = opt.state[p]
+            st[<span class="s">&quot;exp_avg&quot;</span>].mul_(c)
+            st[<span class="s">&quot;exp_avg_sq&quot;</span>].mul_(c * c)
+    <span class="k">return</span> {<span class="s">&quot;model&quot;</span>: sd, <span class="s">&quot;opt&quot;</span>: opt.state_dict(), <span class="s">&quot;scaler&quot;</span>: CONV[<span class="s">&quot;scaler&quot;</span>]}
+
+<span class="c"># exactness check: stored w / c, used c x (w / c): the same function as the unscaled design</span>
+_m1 = make_diag(<span class="s">&quot;design&quot;</span>); _m1.load_state_dict(CONV[<span class="s">&quot;model&quot;</span>])
+_m2 = make_scaled(<span class="s">&quot;design&quot;</span>, 1.0, D2C.expert_lr[0]); _m2.load_state_dict(scaled_init(D2C.expert_lr[0])[<span class="s">&quot;model&quot;</span>])
+_x, _ = VAL_W.get(0, 2)
+_l1, _l2 = _m1.logits(_x), _m2.logits(_x)
+_rel = ((_l1 - _l2).abs().max() / _l1.abs().max()).item()
+gate(_rel &lt; 1e-4, f&quot;storing the experts as w / c keeps the function: largest relative logit difference {_rel:.1e}&quot;)
+<span class="k">del</span> _m1, _m2
+
+DIAG2 = {}
+RUN_V22 = <span class="k">False</span>   <span class="c"># v2.2&#x27;s six runs: results are in the plan (Section 12); True reruns them (~20 min)</span>
+<span class="k">if</span> RUN_V22:
+    _plan2 = [
+        (<span class="s">&quot;A&quot;</span>, <span class="s">&quot;dense continues&quot;</span>, <span class="k">lambda</span>: diag_run(<span class="s">&quot;D2_A_dense&quot;</span>, make_dense, _R1_BLOB)),
+        (<span class="s">&quot;Aw&quot;</span>, <span class="s">&quot;dense, 100-step warm-up&quot;</span>, <span class="k">lambda</span>: diag_run(<span class="s">&quot;D2_Aw_dense_warm&quot;</span>, make_dense, _R1_BLOB, warmup=DC_.warmup_e)),
+        (<span class="s">&quot;D&quot;</span>, <span class="s">&quot;design, router 10x slower&quot;</span>, <span class="k">lambda</span>: diag_run(<span class="s">&quot;D2_D_slow_router&quot;</span>, <span class="k">lambda</span>: make_diag(<span class="s">&quot;design&quot;</span>, zscale=DC_.router_scale_d), CONV,
+                                                           extra_loss=moe_extra_loss, after_step=moe_after_step, prob_steps=DC_.switch)),
+    ]
+    <span class="k">for</span> _c, _tag <span class="k">in</span> zip(D2C.expert_lr, (<span class="s">&quot;35&quot;</span>, <span class="s">&quot;12&quot;</span>)):
+        _plan2.append((f&quot;D{_tag}&quot;, f&quot;as D, expert lr x {_c}&quot;,
+                       (<span class="k">lambda</span> c=_c, tag=_tag: diag_run(f&quot;D2_D{tag}_expert_lr&quot;, <span class="k">lambda</span>: make_scaled(<span class="s">&quot;design&quot;</span>, DC_.router_scale_d, c),
+                                                        scaled_init(c, <span class="s">&quot;design&quot;</span>, DC_.router_scale_d),
+                                                        extra_loss=moe_extra_loss, after_step=moe_after_step, prob_steps=DC_.switch))))
+    _plan2.append((<span class="s">&quot;F35&quot;</span>, f&quot;token-id routing, expert lr x {D2C.expert_lr[0]}&quot;,
+                   <span class="k">lambda</span>: diag_run(<span class="s">&quot;D2_F35_hash_expert_lr&quot;</span>, <span class="k">lambda</span>: make_scaled(<span class="s">&quot;hash&quot;</span>, 1.0, D2C.expert_lr[0]),
+                                    scaled_init(D2C.expert_lr[0], <span class="s">&quot;hash&quot;</span>), after_step=moe_after_step)))
+    <span class="k">for</span> name, label, fn <span class="k">in</span> _plan2:
+        print(f&quot;\n--- run {name}: {label}&quot;)
+        DIAG2[name] = {<span class="s">&quot;label&quot;</span>: label, <span class="s">&quot;hist&quot;</span>: fn()}
+    _a2_end = report_diag(DIAG2, <span class="s">&quot;v22_diagnostic.png&quot;</span>, DC_.switch)
+    _best = min((k <span class="k">for</span> k <span class="k">in</span> DIAG2 <span class="k">if</span> k <span class="k">not</span> <span class="k">in</span> (<span class="s">&quot;A&quot;</span>, <span class="s">&quot;Aw&quot;</span>)), key=<span class="k">lambda</span> k: DIAG2[k][<span class="s">&quot;hist&quot;</span>][<span class="s">&quot;final_val&quot;</span>])
+    _gap = DIAG2[_best][<span class="s">&quot;hist&quot;</span>][<span class="s">&quot;final_val&quot;</span>] - _a2_end
+    print(f&quot;\nbest MoE run: {_best} ({DIAG2[_best][<span class="s">&#x27;label&#x27;</span>]}), {_gap:+.4f} vs dense A at step {DC_.steps}&quot;
+          + (<span class="s">&quot;  -&gt; keeps pace with dense&quot;</span> <span class="k">if</span> abs(_gap) &lt; 0.005 <span class="k">else</span> (<span class="s">&quot;  -&gt; ahead of dense&quot;</span> <span class="k">if</span> _gap &lt; 0 <span class="k">else</span> <span class="s">&quot;  -&gt; still behind dense&quot;</span>)))
+    _e_like = DIAG2[<span class="s">&quot;Aw&quot;</span>][<span class="s">&quot;hist&quot;</span>][<span class="s">&quot;val&quot;</span>][1][<span class="s">&quot;loss&quot;</span>] - DIAG2[<span class="s">&quot;A&quot;</span>][<span class="s">&quot;hist&quot;</span>][<span class="s">&quot;val&quot;</span>][1][<span class="s">&quot;loss&quot;</span>]
+    print(f&quot;dense with the warm-up vs without, at step {DIAG2[<span class="s">&#x27;A&#x27;</span>][<span class="s">&#x27;hist&#x27;</span>][<span class="s">&#x27;val&#x27;</span>][1][<span class="s">&#x27;step&#x27;</span>]}: {_e_like:+.4f} &quot;
+          <span class="s">&quot;(v2.1&#x27;s MoE run E was 0.0618 below dense at this point)&quot;</span>)
+    R[<span class="s">&quot;diag2&quot;</span>] = {<span class="s">&quot;cfg&quot;</span>: asdict(D2C), <span class="s">&quot;exact_rel&quot;</span>: _rel, <span class="s">&quot;best&quot;</span>: _best,
+                  <span class="s">&quot;runs&quot;</span>: {k: {<span class="s">&quot;label&quot;</span>: d[<span class="s">&quot;label&quot;</span>], <span class="s">&quot;hist&quot;</span>: d[<span class="s">&quot;hist&quot;</span>]} <span class="k">for</span> k, d <span class="k">in</span> DIAG2.items()}}
+<span class="k">else</span>:
+    print(<span class="s">&quot;v2.2 diagnostic skipped (RUN_V22 = False): its results are recorded in the plan, Section 12.&quot;</span>)</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">  [PASS] storing the experts as w / c keeps the function: largest relative logit difference 2.4e-06
+v2.2 diagnostic skipped (RUN_V22 = False): its results are recorded in the plan, Section 12.</pre></div><p class="outnote">The w / c trick changes the logits only by rounding.</p></article></section><section class="grp"><h2><span class="gtag">Task 3</span><span class="gname">Show it keeps training and reduces loss</span></h2><article class="cell"><h3>Cell 18 &middot; The full comparison: R2, R2s and R3, 50M tokens each</h3><div class="body"><p>Three continuations of R1 on the same 50M new tokens, each with its learning rate lowered over the last 610 of 3,051 steps. <b>R2</b> is the dense model continuing. <b>R3</b> is the MoE with both fixes: router output &times;&nbsp;0.1, experts at 1/8 speed, and the switch to best-score selection at step 100.</p><p><b>R2s</b> is the fair control. Slowing the experts is part of the MoE's recipe, so R2s gives the dense model's FFN the same 1/8 speed with the same w&nbsp;/&nbsp;c trick (<code>ScaledMLP</code>). R3 against R2s is the test of whether the MoE's extra parameters helped; R3 against R2 is the practical question.</p></div><p class="io"><b>Inputs:</b> R1's checkpoint, the continuation data. <b>Outputs:</b> <code>R2</code>, <code>R2s</code>, <code>R3</code> histories and checkpoints.</p><details class="src"><summary>Show the full cell source &mdash; 69 lines</summary><pre class="code">@dataclass(frozen=<span class="k">True</span>)
+<span class="k">class</span> V3Cfg:
+    expert_lr: float = 0.125     <span class="c"># V3-1: D12, the best setting in v2.2</span>
+    router_scale: float = 0.1    <span class="c"># the 10x slower router (v2.1, run D)</span>
+    switch: int = 100            <span class="c"># V3-3: switch to hard selection at step 100</span>
+    decay_frac: float = 0.2      <span class="c"># R2, R2s, R3: lower the learning rate over the last 20%</span>
+
+V3 = V3Cfg()
+<span class="k">if</span> PROFILE == <span class="s">&quot;cpu&quot;</span>:
+    V3 = replace(V3, switch=20)
+<span class="k">elif</span> PROFILE == <span class="s">&quot;smoke&quot;</span>:
+    V3 = replace(V3, switch=30)
+DECAY = int(V3.decay_frac * STEPS)
+
+<span class="k">class</span> ScaledMLP(MLP):
+    <span class="s">&quot;&quot;&quot;The dense FFN stored as w / c and used as c x (w / c): same function, c-times-slower learning under Adam.&quot;&quot;&quot;</span>
+    c = 1.0
+    <span class="k">def</span> forward(self, x):
+        <span class="k">return</span> F.linear(F.gelu(F.linear(x, self.c * self.up.weight)), self.c * self.down.weight)
+
+<span class="k">def</span> make_dense_scaled(c=V3.expert_lr):
+    m = make_dense()
+    <span class="k">for</span> b <span class="k">in</span> m.blocks:
+        new = ScaledMLP(MC)
+        new.c = c
+        b.mlp = new.to(DEVICE)
+    <span class="k">return</span> m
+
+<span class="k">def</span> dense_scaled_init(c=V3.expert_lr):
+    sd = {k: (v / c <span class="k">if</span> <span class="s">&quot;.mlp.&quot;</span> <span class="k">in</span> k <span class="k">else</span> v) <span class="k">for</span> k, v <span class="k">in</span> _R1_BLOB[<span class="s">&quot;model&quot;</span>].items()}
+    m = make_dense_scaled(c)
+    m.load_state_dict(sd)
+    opt = make_opt(m, TC.lr)
+    opt.load_state_dict(_R1_BLOB[<span class="s">&quot;opt&quot;</span>])
+    <span class="k">for</span> n, p <span class="k">in</span> m.named_parameters():
+        <span class="k">if</span> <span class="s">&quot;.mlp.&quot;</span> <span class="k">in</span> n <span class="k">and</span> p <span class="k">in</span> opt.state:
+            opt.state[p][<span class="s">&quot;exp_avg&quot;</span>].mul_(c)
+            opt.state[p][<span class="s">&quot;exp_avg_sq&quot;</span>].mul_(c * c)
+    <span class="k">return</span> {<span class="s">&quot;model&quot;</span>: sd, <span class="s">&quot;opt&quot;</span>: opt.state_dict(), <span class="s">&quot;scaler&quot;</span>: _R1_BLOB[<span class="s">&quot;scaler&quot;</span>]}
+
+<span class="k">def</span> make_r3():
+    <span class="k">return</span> make_scaled(<span class="s">&quot;design&quot;</span>, V3.router_scale, V3.expert_lr)
+
+<span class="c"># check: the slowed dense model computes what R1 computes</span>
+_m1 = make_dense(); _m1.load_state_dict(_R1_BLOB[<span class="s">&quot;model&quot;</span>])
+_m2 = make_dense_scaled(); _m2.load_state_dict(dense_scaled_init()[<span class="s">&quot;model&quot;</span>])
+_x, _ = VAL_W.get(0, 2)
+_l1, _l2 = _m1.logits(_x), _m2.logits(_x)
+_rel_d = ((_l1 - _l2).abs().max() / _l1.abs().max()).item()
+gate(_rel_d &lt; 1e-4, f&quot;R2s starts as R1: largest relative logit difference {_rel_d:.1e}&quot;)
+<span class="k">del</span> _m1, _m2
+
+V3_CODE = DENSE_CODE + MOE_CODE + (DiagMoE, make_diag, ScaledDiagMoE, make_scaled, scaled_init, ScaledMLP,
+                                   make_dense_scaled, dense_scaled_init, make_r3)
+
+print(f&quot;\n--- R2: the dense model continues ({STEPS:,} steps, decay over the last {DECAY:,})&quot;)
+R2 = cached_run(<span class="s">&quot;R2_dense&quot;</span>, V3_CODE, make_model=make_dense, steps=STEPS, warmup=0, decay=DECAY,
+                window_start=CONT_START, init=_R1_BLOB)
+print(f&quot;\n--- R2s: the dense model continues, FFN at {V3.expert_lr}x learning speed&quot;)
+R2S = cached_run(<span class="s">&quot;R2s_dense_slow_ffn&quot;</span>, V3_CODE, make_model=make_dense_scaled, steps=STEPS, warmup=0, decay=DECAY,
+                 window_start=CONT_START, init=dense_scaled_init())
+print(f&quot;\n--- R3: the MoE (router {V3.router_scale}x, experts {V3.expert_lr}x, switch at step {V3.switch})&quot;)
+XC = replace(XC, prob_steps=V3.switch)       <span class="c"># the switch for R3 (moe_after_step and the model builder read it)</span>
+_WIN.clear()
+R3 = cached_run(f&quot;R3_moe_sw{V3.switch}&quot;, V3_CODE, make_model=make_r3, steps=STEPS, warmup=0, decay=DECAY,
+                window_start=CONT_START, init=scaled_init(V3.expert_lr, <span class="s">&quot;design&quot;</span>, V3.router_scale),
+                extra_loss=moe_extra_loss, after_step=moe_after_step)
+R[<span class="s">&quot;runs&quot;</span>].update({<span class="s">&quot;R2&quot;</span>: R2, <span class="s">&quot;R2s&quot;</span>: R2S, <span class="s">&quot;R3&quot;</span>: R3})
+R[<span class="s">&quot;v3&quot;</span>] = {<span class="s">&quot;cfg&quot;</span>: asdict(V3), <span class="s">&quot;decay_steps&quot;</span>: DECAY, <span class="s">&quot;r2s_exact_rel&quot;</span>: _rel_d}</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">  [PASS] R2s starts as R1: largest relative logit difference 0.0e+00
+
+--- R2: the dense model continues (3,051 steps, decay over the last 610)
+    [cached run] &#x27;R2_dense&#x27; reloaded, not retrained; progress replayed from its saved log:
+    R2_dense       step      0/3,051  tokens   0.0M  train   -     val 4.1230    0.0 train-min
+    R2_dense       step    152/3,051  tokens   2.5M  train 4.1073  val 4.1025    0.6 train-min
+    R2_dense       step    304/3,051  tokens   5.0M  train 4.0743  val 4.0895    1.4 train-min
+    R2_dense       step    456/3,051  tokens   7.5M  train 4.1157  val 4.0802    2.1 train-min
+    R2_dense       step    608/3,051  tokens  10.0M  train 4.1057  val 4.0536    2.9 train-min
+    R2_dense       step    760/3,051  tokens  12.5M  train 4.1081  val 4.0470    3.7 train-min
+    R2_dense       step    912/3,051  tokens  14.9M  train 4.0820  val 4.0294    4.6 train-min
+    R2_dense       step  1,064/3,051  tokens  17.4M  train 4.0717  val 4.0182    5.4 train-min
+    R2_dense       step  1,216/3,051  tokens  19.9M  train 4.0490  val 4.0138    6.2 train-min
+    R2_dense       step  1,368/3,051  tokens  22.4M  train 4.0288  val 3.9974    7.1 train-min
+    R2_dense       step  1,520/3,051  tokens  24.9M  train 4.0249  val 3.9859    7.9 train-min
+    R2_dense       step  1,672/3,051  tokens  27.4M  train 4.0094  val 3.9767    8.8 train-min
+    R2_dense       step  1,824/3,051  tokens  29.9M  train 4.0020  val 3.9735    9.6 train-min
+    R2_dense       step  1,976/3,051  tokens  32.4M  train 4.0444  val 3.9600   10.4 train-min
+    R2_dense       step  2,128/3,051  tokens  34.9M  train 3.9952  val 3.9512   11.3 train-min
+    R2_dense       step  2,280/3,051  tokens  37.4M  train 4.0025  val 3.9437   12.1 train-min
+    R2_dense       step  2,432/3,051  tokens  39.8M  train 3.9903  val 3.9392   13.0 train-min
+    R2_dense       step  2,584/3,051  tokens  42.3M  train 3.9203  val 3.9005   13.8 train-min
+    R2_dense       step  2,736/3,051  tokens  44.8M  train 3.9094  val 3.8575   14.6 train-min
+    R2_dense       step  2,888/3,051  tokens  47.3M  train 3.8547  val 3.8132   15.5 train-min
+    R2_dense       step  3,040/3,051  tokens  49.8M  train 3.8436  val 3.7771   16.3 train-min
+    R2_dense       step  3,051/3,051  tokens  50.0M  train 3.8176  val 3.7757   16.4 train-min
+    R2_dense       measured: 50,728 tokens/s, peak memory 6,321 MiB
+
+--- R2s: the dense model continues, FFN at 0.125x learning speed
+    [cached run] &#x27;R2s_dense_slow_ffn&#x27; reloaded, not retrained; progress replayed from its saved log:
+    R2s_dense_slow_ffn step      0/3,051  tokens   0.0M  train   -     val 4.1230    0.0 train-min
+    R2s_dense_slow_ffn step    152/3,051  tokens   2.5M  train 4.0614  val 4.0562    0.8 train-min
+    R2s_dense_slow_ffn step    304/3,051  tokens   5.0M  train 4.0269  val 4.0377    1.6 train-min
+    R2s_dense_slow_ffn step    456/3,051  tokens   7.5M  train 4.0673  val 4.0327    2.5 train-min
+    R2s_dense_slow_ffn step    608/3,051  tokens  10.0M  train 4.0653  val 4.0150    3.3 train-min
+    R2s_dense_slow_ffn step    760/3,051  tokens  12.5M  train 4.0719  val 4.0045    4.1 train-min
+    R2s_dense_slow_ffn step    912/3,051  tokens  14.9M  train 4.0458  val 3.9965    5.0 train-min
+    R2s_dense_slow_ffn step  1,064/3,051  tokens  17.4M  train 4.0438  val 3.9901    5.8 train-min
+    R2s_dense_slow_ffn step  1,216/3,051  tokens  19.9M  train 4.0223  val 3.9848    6.7 train-min
+    R2s_dense_slow_ffn step  1,368/3,051  tokens  22.4M  train 4.0101  val 3.9758    7.5 train-min
+    R2s_dense_slow_ffn step  1,520/3,051  tokens  24.9M  train 4.0078  val 3.9693    8.4 train-min
+    R2s_dense_slow_ffn step  1,672/3,051  tokens  27.4M  train 3.9955  val 3.9589    9.2 train-min
+    R2s_dense_slow_ffn step  1,824/3,051  tokens  29.9M  train 3.9916  val 3.9592   10.0 train-min
+    R2s_dense_slow_ffn step  1,976/3,051  tokens  32.4M  train 4.0447  val 3.9524   10.9 train-min
+    R2s_dense_slow_ffn step  2,128/3,051  tokens  34.9M  train 3.9924  val 3.9477   11.7 train-min
+    R2s_dense_slow_ffn step  2,280/3,051  tokens  37.4M  train 4.0024  val 3.9421   12.5 train-min
+    R2s_dense_slow_ffn step  2,432/3,051  tokens  39.8M  train 3.9891  val 3.9376   13.4 train-min
+    R2s_dense_slow_ffn step  2,584/3,051  tokens  42.3M  train 3.9292  val 3.9098   14.2 train-min
+    R2s_dense_slow_ffn step  2,736/3,051  tokens  44.8M  train 3.9327  val 3.8841   15.1 train-min
+    R2s_dense_slow_ffn step  2,888/3,051  tokens  47.3M  train 3.8942  val 3.8516   15.9 train-min
+    R2s_dense_slow_ffn step  3,040/3,051  tokens  49.8M  train 3.8881  val 3.8278   16.8 train-min
+    R2s_dense_slow_ffn step  3,051/3,051  tokens  50.0M  train 3.8481  val 3.8268   16.8 train-min
+    R2s_dense_slow_ffn measured: 49,374 tokens/s, peak memory 6,374 MiB
+
+--- R3: the MoE (router 0.1x, experts 0.125x, switch at step 100)
+    [resume] &#x27;R3_moe_sw100&#x27; from step 2,368 of 3,051
+    R3_moe_sw100   step  2,432/3,051  tokens  39.8M  lr 1.00e-03  train 3.9653  val 3.9163  16,332 tok/s
+    R3_moe_sw100   step  2,584/3,051  tokens  42.3M  lr 7.89e-04  train 3.9024  val 3.8864  16,381 tok/s
+    R3_moe_sw100   step  2,736/3,051  tokens  44.8M  lr 5.65e-04  train 3.9033  val 3.8553  16,424 tok/s
+    R3_moe_sw100   step  2,888/3,051  tokens  47.3M  lr 3.40e-04  train 3.8608  val 3.8207  16,226 tok/s
+    R3_moe_sw100   step  3,040/3,051  tokens  49.8M  lr 1.16e-04  train 3.8577  val 3.7943  16,249 tok/s
+    R3_moe_sw100   step  3,051/3,051  tokens  50.0M  lr 1.00e-04  train 3.8368  val 3.7932  16,253 tok/s</pre></div><p class="outnote">R2 and R2s reloaded from Drive; R3 resumed from its step-2,368 checkpoint after a Colab disconnect and finished there.</p></article><article class="cell"><h3>Cell 19 &middot; The answer</h3><div class="body"><p>Checks <b>G5</b>, the assignment's requirement: the MoE's loss fell from 4.1230 to 3.7932 (-0.3299). Then it compares: R3 finished -0.0336 against R2s, so the extra parameters helped, and +0.0175 against R2, so the ordinary dense model still won. R3 was -0.0229 against R2 at 39.8M tokens, just before the decay, and the decay turned that lead around.</p><p><b>Two lines in this printout were corrected afterwards.</b> The conclusion named only the favourable comparison. And "MaxVio 0.214 at the end" came from a final log window only one step long; over the last full 25-step window it is 0.026. Both are fixed in <code>notebook_src.py</code>; the printout below is what ran.</p></div><p class="io"><b>Inputs:</b> <code>R2</code>, <code>R2s</code>, <code>R3</code>. <b>Outputs:</b> gate G5, the verdicts, three figures, samples.</p><details class="src"><summary>Show the full cell source &mdash; 90 lines</summary><pre class="code">NOISE = 0.002                      <span class="c"># run-to-run spread of R1 measured across three T4 runs (plan, Section 12)</span>
+
+<span class="k">def</span> _at(h, tokens):
+    <span class="k">return</span> min(h[<span class="s">&quot;val&quot;</span>], key=<span class="k">lambda</span> p: abs(p[<span class="s">&quot;tokens&quot;</span>] - tokens))[<span class="s">&quot;loss&quot;</span>]
+
+v_conv = R3[<span class="s">&quot;val&quot;</span>][0][<span class="s">&quot;loss&quot;</span>]
+res = {k: h[<span class="s">&quot;final_val&quot;</span>] <span class="k">for</span> k, h <span class="k">in</span> ((<span class="s">&quot;R2&quot;</span>, R2), (<span class="s">&quot;R2s&quot;</span>, R2S), (<span class="s">&quot;R3&quot;</span>, R3))}
+decay_tok = (STEPS - DECAY) * TC.batch * MC.seq
+dec = {k: _at(h, decay_tok) - h[<span class="s">&quot;final_val&quot;</span>] <span class="k">for</span> k, h <span class="k">in</span> ((<span class="s">&quot;R2&quot;</span>, R2), (<span class="s">&quot;R2s&quot;</span>, R2S), (<span class="s">&quot;R3&quot;</span>, R3))}
+print(f&quot;validation loss at conversion (R1&#x27;s checkpoint): {v_conv:.4f}&quot;)
+<span class="k">for</span> k, lab <span class="k">in</span> ((<span class="s">&quot;R2&quot;</span>, <span class="s">&quot;dense continues&quot;</span>), (<span class="s">&quot;R2s&quot;</span>, <span class="s">&quot;dense, FFN at 1/8 speed&quot;</span>), (<span class="s">&quot;R3&quot;</span>, <span class="s">&quot;MoE&quot;</span>)):
+    h = R[<span class="s">&quot;runs&quot;</span>][k]
+    print(f&quot;  {k:&lt;4} {lab:&lt;26} final {res[k]:.4f}  ({res[k] - v_conv:+.4f} since conversion; &quot;
+          f&quot;{dec[k]:.4f} of it in the decay phase)  {(h.get(<span class="s">&#x27;tokens_per_second&#x27;</span>) <span class="k">or</span> 0):,.0f} tok/s&quot;)
+g5 = v_conv - res[<span class="s">&quot;R3&quot;</span>] &gt; NOISE
+gate(g5, f&quot;G5: the MoE keeps training: {v_conv:.4f} -&gt; {res[<span class="s">&#x27;R3&#x27;</span>]:.4f} ({res[<span class="s">&#x27;R3&#x27;</span>] - v_conv:+.4f}; noise floor {NOISE})&quot;)
+
+<span class="k">def</span> _verdict(a, b, name_a, name_b):
+    d = res[a] - res[b]
+    <span class="k">if</span> abs(d) &lt;= NOISE:
+        <span class="k">return</span> f&quot;{name_a} and {name_b} finish level ({d:+.4f}, within the noise floor of {NOISE})&quot;
+    <span class="k">return</span> f&quot;{name_a} finishes {<span class="s">&#x27;below&#x27;</span> <span class="k">if</span> d &lt; 0 <span class="k">else</span> <span class="s">&#x27;above&#x27;</span>} {name_b} by {abs(d):.4f} ({d:+.4f})&quot;
+
+v_moe_dense = _verdict(<span class="s">&quot;R3&quot;</span>, <span class="s">&quot;R2&quot;</span>, <span class="s">&quot;the MoE (R3)&quot;</span>, <span class="s">&quot;the dense model (R2)&quot;</span>)
+v_moe_fair = _verdict(<span class="s">&quot;R3&quot;</span>, <span class="s">&quot;R2s&quot;</span>, <span class="s">&quot;the MoE (R3)&quot;</span>, <span class="s">&quot;the dense model with the same slowed FFN (R2s)&quot;</span>)
+v_slow = _verdict(<span class="s">&quot;R2s&quot;</span>, <span class="s">&quot;R2&quot;</span>, <span class="s">&quot;slowing the dense FFN (R2s)&quot;</span>, <span class="s">&quot;the dense model (R2)&quot;</span>)
+print(<span class="s">&quot;\n&quot;</span> + <span class="s">&quot;\n&quot;</span>.join([<span class="s">&quot;- &quot;</span> + v <span class="k">for</span> v <span class="k">in</span> (v_moe_dense, v_moe_fair, v_slow)]))
+<span class="k">if</span> res[<span class="s">&quot;R3&quot;</span>] &lt; res[<span class="s">&quot;R2s&quot;</span>] - NOISE:
+    concl = (<span class="s">&quot;The MoE beats the dense model given the same slowed FFN, so its extra stored parameters helped, &quot;</span>
+             <span class="s">&quot;at the same work per token.&quot;</span>)
+<span class="k">elif</span> res[<span class="s">&quot;R3&quot;</span>] &lt; res[<span class="s">&quot;R2&quot;</span>] - NOISE:
+    concl = (<span class="s">&quot;The MoE beats the ordinary dense model, but not the dense model with the same slowed FFN, so the &quot;</span>
+             <span class="s">&quot;gain comes from the slower learning, not from the extra parameters.&quot;</span>)
+<span class="k">else</span>:
+    concl = <span class="s">&quot;At this size and budget, the MoE does not beat the dense model.&quot;</span>
+print(<span class="s">&quot;\nCONCLUSION: &quot;</span> + concl)
+R[<span class="s">&quot;v3&quot;</span>].update({<span class="s">&quot;v_conv&quot;</span>: v_conv, <span class="s">&quot;final&quot;</span>: res, <span class="s">&quot;decay_drop&quot;</span>: dec, <span class="s">&quot;g5&quot;</span>: g5, <span class="s">&quot;noise&quot;</span>: NOISE,
+                <span class="s">&quot;verdicts&quot;</span>: [v_moe_dense, v_moe_fair, v_slow], <span class="s">&quot;conclusion&quot;</span>: concl})
+
+<span class="c"># figure 1: loss across the conversion</span>
+fig, ax = plt.subplots(figsize=(9, 4))
+_r1v = [p <span class="k">for</span> p <span class="k">in</span> R1[<span class="s">&quot;val&quot;</span>] <span class="k">if</span> p[<span class="s">&quot;tokens&quot;</span>] &gt;= R1[<span class="s">&quot;val&quot;</span>][-1][<span class="s">&quot;tokens&quot;</span>] - 20e6]
+ax.plot([p[<span class="s">&quot;tokens&quot;</span>]/1e6 <span class="k">for</span> p <span class="k">in</span> _r1v], [p[<span class="s">&quot;loss&quot;</span>] <span class="k">for</span> p <span class="k">in</span> _r1v], color=<span class="s">&quot;#7d7972&quot;</span>, marker=<span class="s">&quot;o&quot;</span>, ms=3, label=<span class="s">&quot;R1 dense (first 50M)&quot;</span>)
+_off = R1[<span class="s">&quot;val&quot;</span>][-1][<span class="s">&quot;tokens&quot;</span>]
+<span class="k">for</span> k, col, lab <span class="k">in</span> ((<span class="s">&quot;R2&quot;</span>, <span class="s">&quot;#b1521f&quot;</span>, <span class="s">&quot;R2 dense continues&quot;</span>), (<span class="s">&quot;R2s&quot;</span>, <span class="s">&quot;#e08e45&quot;</span>, <span class="s">&quot;R2s dense, FFN at 1/8 speed&quot;</span>),
+                    (<span class="s">&quot;R3&quot;</span>, <span class="s">&quot;#1f6f8b&quot;</span>, <span class="s">&quot;R3 MoE&quot;</span>)):
+    h = R[<span class="s">&quot;runs&quot;</span>][k]
+    ax.plot([(p[<span class="s">&quot;tokens&quot;</span>] + _off)/1e6 <span class="k">for</span> p <span class="k">in</span> h[<span class="s">&quot;val&quot;</span>]], [p[<span class="s">&quot;loss&quot;</span>] <span class="k">for</span> p <span class="k">in</span> h[<span class="s">&quot;val&quot;</span>]], color=col, marker=<span class="s">&quot;o&quot;</span>, ms=3,
+            ls=<span class="s">&quot;--&quot;</span> <span class="k">if</span> k == <span class="s">&quot;R2s&quot;</span> <span class="k">else</span> <span class="s">&quot;-&quot;</span>, label=lab)
+ax.axvline(_off/1e6, color=<span class="s">&quot;#7a4b9e&quot;</span>, ls=<span class="s">&quot;--&quot;</span>, lw=0.8)
+ax.axvspan((_off + decay_tok)/1e6, (_off + STEPS * TC.batch * MC.seq)/1e6, color=<span class="s">&quot;#cbc5bb&quot;</span>, alpha=0.3, lw=0)
+ax.set_xlabel(<span class="s">&quot;training tokens (millions)&quot;</span>); ax.set_ylabel(<span class="s">&quot;validation loss&quot;</span>); ax.legend(frameon=<span class="k">False</span>)
+ax.set_title(<span class="s">&quot;conversion at the dashed line; shaded: learning-rate decay&quot;</span>, fontsize=9)
+_save(fig, <span class="s">&quot;v3_loss.png&quot;</span>)
+
+<span class="c"># figure 2: balance over R3</span>
+_ml3 = R3[<span class="s">&quot;extra&quot;</span>][<span class="s">&quot;moe_log&quot;</span>]
+fig, ax = plt.subplots(figsize=(9, 3.4))
+ax.plot([m[<span class="s">&quot;step&quot;</span>] <span class="k">for</span> m <span class="k">in</span> _ml3], [m[<span class="s">&quot;maxvio&quot;</span>] <span class="k">for</span> m <span class="k">in</span> _ml3], color=<span class="s">&quot;#b1521f&quot;</span>, label=<span class="s">&quot;MaxVio&quot;</span>)
+ax.plot([m[<span class="s">&quot;step&quot;</span>] <span class="k">for</span> m <span class="k">in</span> _ml3], [m[<span class="s">&quot;clone_dist&quot;</span>] <span class="k">for</span> m <span class="k">in</span> _ml3], color=<span class="s">&quot;#2c6b45&quot;</span>, label=<span class="s">&quot;clone distance&quot;</span>)
+ax2 = ax.twinx(); ax2.bar([m[<span class="s">&quot;step&quot;</span>] <span class="k">for</span> m <span class="k">in</span> _ml3], [m[<span class="s">&quot;dead&quot;</span>] <span class="k">for</span> m <span class="k">in</span> _ml3], width=15, color=<span class="s">&quot;#9a968e&quot;</span>, alpha=0.5)
+ax2.set_ylabel(<span class="s">&quot;dead experts (grey bars)&quot;</span>)
+ax.axvline(V3.switch, color=<span class="s">&quot;#9a968e&quot;</span>, ls=<span class="s">&quot;:&quot;</span>, lw=0.8)
+ax.set_xlabel(<span class="s">&quot;R3 step&quot;</span>); ax.legend(frameon=<span class="k">False</span>)
+_save(fig, <span class="s">&quot;v3_balance.png&quot;</span>)
+
+<span class="c"># figure 3: final load per expert</span>
+_share3 = np.array(_ml3[-1][<span class="s">&quot;share&quot;</span>]).reshape(MC.n_layer, N_EXP)
+fig, ax = plt.subplots(figsize=(8, 4))
+im = ax.imshow(_share3, aspect=<span class="s">&quot;auto&quot;</span>, cmap=<span class="s">&quot;viridis&quot;</span>, vmin=0, vmax=max(0.25, _share3.max()))
+<span class="k">for</span> f <span class="k">in</span> range(1, XC.families):
+    ax.axvline(f * XC.clones - 0.5, color=<span class="s">&quot;white&quot;</span>, lw=1)
+ax.set_xlabel(<span class="s">&quot;expert (4 families of 8)&quot;</span>); ax.set_ylabel(<span class="s">&quot;layer&quot;</span>)
+ax.set_title(<span class="s">&quot;R3, last 25 steps: share of each family&#x27;s tokens (even = 0.125)&quot;</span>, fontsize=9)
+fig.colorbar(im, ax=ax, fraction=0.046)
+_save(fig, <span class="s">&quot;v3_load.png&quot;</span>)
+R[<span class="s">&quot;v3&quot;</span>].update({<span class="s">&quot;maxvio_end&quot;</span>: _ml3[-1][<span class="s">&quot;maxvio&quot;</span>], <span class="s">&quot;maxvio_max_after_switch&quot;</span>: max(m[<span class="s">&quot;maxvio&quot;</span>] <span class="k">for</span> m <span class="k">in</span> _ml3 <span class="k">if</span> m[<span class="s">&quot;step&quot;</span>] &gt; V3.switch),
+                <span class="s">&quot;dead_max&quot;</span>: max(m[<span class="s">&quot;dead&quot;</span>] <span class="k">for</span> m <span class="k">in</span> _ml3), <span class="s">&quot;dead_end&quot;</span>: _ml3[-1][<span class="s">&quot;dead&quot;</span>], <span class="s">&quot;clone_dist_end&quot;</span>: _ml3[-1][<span class="s">&quot;clone_dist&quot;</span>]})
+print(f&quot;\nR3 balance: MaxVio {R[<span class="s">&#x27;v3&#x27;</span>][<span class="s">&#x27;maxvio_end&#x27;</span>]:.3f} at the end (at most {R[<span class="s">&#x27;v3&#x27;</span>][<span class="s">&#x27;maxvio_max_after_switch&#x27;</span>]:.3f} &quot;
+      f&quot;after the switch); dead experts at the end {R[<span class="s">&#x27;v3&#x27;</span>][<span class="s">&#x27;dead_end&#x27;</span>]}, at most {R[<span class="s">&#x27;v3&#x27;</span>][<span class="s">&#x27;dead_max&#x27;</span>]}; &quot;
+      f&quot;clone distance {R[<span class="s">&#x27;v3&#x27;</span>][<span class="s">&#x27;clone_dist_end&#x27;</span>]:.3f}&quot;)
+
+<span class="c"># the same three prompts, from R2 and R3</span>
+R[<span class="s">&quot;samples_v3&quot;</span>] = {}
+<span class="k">for</span> k, mk <span class="k">in</span> ((<span class="s">&quot;R2&quot;</span>, make_dense), (<span class="s">&quot;R3&quot;</span>, make_r3)):
+    m = mk(); m.load_state_dict(load_final({<span class="s">&quot;R2&quot;</span>: <span class="s">&quot;R2_dense&quot;</span>, <span class="s">&quot;R3&quot;</span>: f&quot;R3_moe_sw{V3.switch}&quot;}[k])[<span class="s">&quot;model&quot;</span>])
+    R[<span class="s">&quot;samples_v3&quot;</span>][k] = [sample(m, p) <span class="k">for</span> p <span class="k">in</span> PROMPTS]
+    <span class="k">del</span> m
+<span class="k">for</span> i, p <span class="k">in</span> enumerate(PROMPTS):
+    print(f&quot;\n  R2 &gt; {R[<span class="s">&#x27;samples_v3&#x27;</span>][<span class="s">&#x27;R2&#x27;</span>][i]!r}\n  R3 &gt; {R[<span class="s">&#x27;samples_v3&#x27;</span>][<span class="s">&#x27;R3&#x27;</span>][i]!r}&quot;)</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">validation loss at conversion (R1&#x27;s checkpoint): 4.1230
+  R2   dense continues            final 3.7757  (-0.3474 since conversion; 0.1635 of it in the decay phase)  50,728 tok/s
+  R2s  dense, FFN at 1/8 speed    final 3.8268  (-0.2963 since conversion; 0.1108 of it in the decay phase)  49,374 tok/s
+  R3   MoE                        final 3.7932  (-0.3299 since conversion; 0.1232 of it in the decay phase)  16,253 tok/s
+  [PASS] G5: the MoE keeps training: 4.1230 -&gt; 3.7932 (-0.3299; noise floor 0.002)
+
+- the MoE (R3) finishes above the dense model (R2) by 0.0175 (+0.0175)
+- the MoE (R3) finishes below the dense model with the same slowed FFN (R2s) by 0.0336 (-0.0336)
+- slowing the dense FFN (R2s) finishes above the dense model (R2) by 0.0511 (+0.0511)
+
+CONCLUSION: The MoE beats the dense model given the same slowed FFN, so its extra stored parameters helped, at the same work per token.
+  saved v3_loss.png
+  saved v3_balance.png
+  saved v3_load.png
+
+R3 balance: MaxVio 0.214 at the end (at most 0.214 after the switch); dead experts at the end 0, at most 0; clone distance 0.184
+
+  R2 &gt; &#x27;The best way to learn a new language is to provide a new knowledge of the language you need for the next generation of different language.\n- How to use the language you need for your language in your language.\n- It will be interesting&#x27;
+  R3 &gt; &#x27;The best way to learn a new language is to study the history of a child’s life and the way to learn a new language. This book is a unique, accessible way to learn and learn.\nHighlights and related topics\n&#x27;
+
+  R2 &gt; &#x27;Scientists have found that this is a great way to achieve this goal. It’s a great way to achieve this goals and also to do the same job as you.Virtual Graphics and Election&#x27;
+  R3 &gt; &#x27;Scientists have found that induced in the presence of the body, they have shown that the body is part of a cellular cell. It is important that individuals who have gained blood and were under control with certain&#x27;
+
+  R2 &gt; &#x27;In the middle of the city there is no point in the city, but it is worth noting that the city is a town. It doesn’t matter whether it will be difficult to be there.\nFinally, there is no&#x27;
+  R3 &gt; &#x27;In the middle of the city there is no indication.\nI had a small village, but a small village was a little bit more to me than I would have to try to get the word out of it. It’s so&#x27;</pre></div><p class="outnote">R3 used all 512 experts for the whole run, and its clones drifted steadily apart (distance 0.184).</p></article><article class="cell"><h3>Cell 20 &middot; Checks, summary, bundle</h3><div class="body"><p>Collects every check that ran in this version, writes <code>summary.json</code> and <code>RESULTS.md</code>, and zips the outputs. The README and the reports are generated from those files.</p></div><p class="io"><b>Inputs:</b> everything above. <b>Outputs:</b> <code>summary.json</code>, <code>RESULTS.md</code>, <code>era5s14_v3_outputs.zip</code>.</p><details class="src"><summary>Show the full cell source &mdash; 64 lines</summary><pre class="code">CHECKS = CHECKS_V1 + [
+    (<span class="s">&quot;conversion: clones hold R1&#x27;s slices, weights and Adam averages&quot;</span>, R[<span class="s">&quot;gates&quot;</span>][<span class="s">&quot;conversion_state&quot;</span>]),
+    (<span class="s">&quot;G1: converted logits match R1&#x27;s in fp64&quot;</span>, G1[<span class="s">&quot;fp64&quot;</span>] &lt; TH.g1_fp64_rel),
+    (<span class="s">&quot;G1: converted validation loss matches R1&#x27;s&quot;</span>, abs(G1_val - R1[<span class="s">&quot;final_val&quot;</span>]) &lt; TH.g1_loss_abs),
+    (<span class="s">&quot;G2: every router gets a gradient (joint rescaling)&quot;</span>, R[<span class="s">&quot;gates&quot;</span>][<span class="s">&quot;G2&quot;</span>][<span class="s">&quot;joint_min&quot;</span>] &gt; 0),
+    (<span class="s">&quot;G2: the per-family rule gives no router gradient (zero up to rounding)&quot;</span>, R[<span class="s">&quot;gates&quot;</span>][<span class="s">&quot;G2&quot;</span>][<span class="s">&quot;per_family_max&quot;</span>] &lt; 1e-6 * R[<span class="s">&quot;gates&quot;</span>][<span class="s">&quot;G2&quot;</span>][<span class="s">&quot;joint_min&quot;</span>]),
+    (<span class="s">&quot;G3: bias balancing evens out a skewed toy layer&quot;</span>, R[<span class="s">&quot;gates&quot;</span>][<span class="s">&quot;G3&quot;</span>][<span class="s">&quot;end&quot;</span>] &lt; TH.g3_maxvio),
+    (<span class="s">&quot;G4: parameter counts match the formula&quot;</span>, R[<span class="s">&quot;gates&quot;</span>][<span class="s">&quot;G4&quot;</span>][<span class="s">&quot;total&quot;</span>] == _want_tot),
+]
+<span class="k">if</span> PREVIEW:
+    CHECKS += [(<span class="s">&quot;preview: finished its steps&quot;</span>, PREVIEW[<span class="s">&quot;train&quot;</span>][-1][<span class="s">&quot;step&quot;</span>] == XC.preview_steps),
+               (<span class="s">&quot;preview: validation loss fell after conversion&quot;</span>, PREVIEW[<span class="s">&quot;final_val&quot;</span>] &lt; PREVIEW[<span class="s">&quot;val&quot;</span>][0][<span class="s">&quot;loss&quot;</span>]),
+               (<span class="s">&quot;preview: no dead experts in the last window&quot;</span>, _ml[-1][<span class="s">&quot;dead&quot;</span>] == 0),
+               (<span class="s">&quot;preview: the clones have started to separate&quot;</span>, _ml[-1][<span class="s">&quot;clone_dist&quot;</span>] &gt; 0)]
+<span class="k">if</span> DIAG:
+    CHECKS.append((<span class="s">&quot;diagnostic v2.1: B (dense in MoE clothing) tracks A&quot;</span>, abs(DIAG[<span class="s">&quot;B&quot;</span>][<span class="s">&quot;hist&quot;</span>][<span class="s">&quot;final_val&quot;</span>] - _a_end) &lt; DC_.b_vs_a_tol))
+<span class="k">if</span> DIAG2:
+    CHECKS.append((<span class="s">&quot;diagnostic v2.2: all six runs finished&quot;</span>, len(DIAG2) == 6 <span class="k">and</span> all(
+        d[<span class="s">&quot;hist&quot;</span>][<span class="s">&quot;train&quot;</span>][-1][<span class="s">&quot;step&quot;</span>] == DC_.steps <span class="k">for</span> d <span class="k">in</span> DIAG2.values())))
+CHECKS += [
+    (<span class="s">&quot;v3: R2s starts as R1 (slowed FFN keeps the function)&quot;</span>, R[<span class="s">&quot;v3&quot;</span>][<span class="s">&quot;r2s_exact_rel&quot;</span>] &lt; 1e-4),
+    (<span class="s">&quot;v3: R2, R2s and R3 finished their steps&quot;</span>, all(R[<span class="s">&quot;runs&quot;</span>][k][<span class="s">&quot;train&quot;</span>][-1][<span class="s">&quot;step&quot;</span>] == STEPS <span class="k">for</span> k <span class="k">in</span> (<span class="s">&quot;R2&quot;</span>, <span class="s">&quot;R2s&quot;</span>, <span class="s">&quot;R3&quot;</span>))),
+    (<span class="s">&quot;v3: R3 started at R1&#x27;s validation loss&quot;</span>, abs(R3[<span class="s">&quot;val&quot;</span>][0][<span class="s">&quot;loss&quot;</span>] - R1[<span class="s">&quot;final_val&quot;</span>]) &lt; TH.g1_loss_abs),
+    (<span class="s">&quot;G5: the MoE keeps training (loss below the conversion value by more than the noise)&quot;</span>, R[<span class="s">&quot;v3&quot;</span>][<span class="s">&quot;g5&quot;</span>]),
+    (<span class="s">&quot;v3: no dead experts at the end of R3&quot;</span>, R[<span class="s">&quot;v3&quot;</span>][<span class="s">&quot;dead_end&quot;</span>] == 0),
+]
+print(<span class="s">&quot;CHECKS&quot;</span>)
+<span class="k">for</span> name, ok <span class="k">in</span> CHECKS:
+    print(f&quot;  [{<span class="s">&#x27;PASS&#x27;</span> <span class="k">if</span> ok <span class="k">else</span> <span class="s">&#x27;FAIL&#x27;</span>}] {name}&quot;)
+_npass = sum(1 <span class="k">for</span> _, ok <span class="k">in</span> CHECKS <span class="k">if</span> ok)
+print(f&quot;\n{NOTEBOOK_VERSION.upper()}: {_npass}/{len(CHECKS)} passed&quot;)
+R[<span class="s">&quot;acceptance&quot;</span>] = {<span class="s">&quot;passed&quot;</span>: _npass, <span class="s">&quot;total&quot;</span>: len(CHECKS),
+                   <span class="s">&quot;checks&quot;</span>: [{<span class="s">&quot;name&quot;</span>: n, <span class="s">&quot;result&quot;</span>: bool(ok)} <span class="k">for</span> n, ok <span class="k">in</span> CHECKS]}
+R[<span class="s">&quot;meta&quot;</span>][<span class="s">&quot;finished&quot;</span>] = time.strftime(<span class="s">&quot;%Y-%m-%d %H:%M:%S&quot;</span>)
+_atomic_save(R, out(<span class="s">&quot;summary.json&quot;</span>), as_json=<span class="k">True</span>)
+
+<span class="k">def</span> _fmt(x, f=<span class="s">&quot;{:,.0f}&quot;</span>):
+    <span class="k">return</span> f.format(x) <span class="k">if</span> x <span class="k">is</span> <span class="k">not</span> <span class="k">None</span> <span class="k">else</span> <span class="s">&quot;n/a&quot;</span>
+
+_rows = [(<span class="s">&quot;R1 dense&quot;</span>, R1), (<span class="s">&quot;R2 dense continues&quot;</span>, R2), (<span class="s">&quot;R2s dense, FFN at 1/8 speed&quot;</span>, R2S), (<span class="s">&quot;R3 MoE&quot;</span>, R3)]
+L_ = [f&quot;# Session 14 results — notebook {NOTEBOOK_VERSION}, profile {PROFILE}\n&quot;,
+      f&quot;Dense model {MC.n_layer} × {MC.d}, {PB[<span class="s">&#x27;total&#x27;</span>]/1e6:.1f}M parameters. MoE: {N_EXP} experts per layer &quot;
+      f&quot;({XC.families} families × {XC.clones}), {R[<span class="s">&#x27;moe&#x27;</span>][<span class="s">&#x27;total_params&#x27;</span>]/1e6:.1f}M total, &quot;
+      f&quot;{R[<span class="s">&#x27;moe&#x27;</span>][<span class="s">&#x27;active_params&#x27;</span>]/1e6:.2f}M active. Device {DEVICE}{<span class="s">&#x27; (&#x27;</span> + GPU_NAME + <span class="s">&#x27;)&#x27;</span> <span class="k">if</span> GPU_NAME <span class="k">else</span> <span class="s">&#x27;&#x27;</span>}.\n&quot;,
+      f&quot;Checks: **{_npass}/{len(CHECKS)}**\n&quot;,
+      <span class="s">&quot;| run | steps | val at start | final val | tokens/s | peak MiB |&quot;</span>, <span class="s">&quot;|---|---|---|---|---|---|&quot;</span>]
+<span class="k">for</span> lab, h <span class="k">in</span> _rows:
+    L_.append(f&quot;| {lab} | {h[<span class="s">&#x27;steps&#x27;</span>]:,} | {h[<span class="s">&#x27;val&#x27;</span>][0][<span class="s">&#x27;loss&#x27;</span>]:.4f} | {h[<span class="s">&#x27;final_val&#x27;</span>]:.4f} | {_fmt(h.get(<span class="s">&#x27;tokens_per_second&#x27;</span>))} | &quot;
+              f&quot;{_fmt((h.get(<span class="s">&#x27;peak_mem_bytes&#x27;</span>) <span class="k">or</span> 0)/2**20 <span class="k">or</span> <span class="k">None</span>)} |&quot;)
+L_ += [<span class="s">&quot;&quot;</span>, *(<span class="s">&quot;- &quot;</span> + v <span class="k">for</span> v <span class="k">in</span> R[<span class="s">&quot;v3&quot;</span>][<span class="s">&quot;verdicts&quot;</span>]), <span class="s">&quot;&quot;</span>, <span class="s">&quot;**Conclusion:** &quot;</span> + R[<span class="s">&quot;v3&quot;</span>][<span class="s">&quot;conclusion&quot;</span>],
+       f&quot;\nR3 balance: MaxVio {R[<span class="s">&#x27;v3&#x27;</span>][<span class="s">&#x27;maxvio_end&#x27;</span>]:.3f} at the end, dead experts {R[<span class="s">&#x27;v3&#x27;</span>][<span class="s">&#x27;dead_end&#x27;</span>]}.&quot;,
+       <span class="s">&quot;\n## Checks\n&quot;</span>] + [f&quot;- [{<span class="s">&#x27;PASS&#x27;</span> <span class="k">if</span> c[<span class="s">&#x27;result&#x27;</span>] <span class="k">else</span> <span class="s">&#x27;FAIL&#x27;</span>}] {c[<span class="s">&#x27;name&#x27;</span>]}&quot; <span class="k">for</span> c <span class="k">in</span> R[<span class="s">&quot;acceptance&quot;</span>][<span class="s">&quot;checks&quot;</span>]]
+<span class="k">with</span> open(out(<span class="s">&quot;RESULTS.md&quot;</span>), <span class="s">&quot;w&quot;</span>, encoding=<span class="s">&quot;utf-8&quot;</span>) <span class="k">as</span> f:
+    f.write(<span class="s">&quot;\n&quot;</span>.join(L_) + <span class="s">&quot;\n&quot;</span>)
+
+_zip = out(f&quot;era5s14_{NOTEBOOK_VERSION}_outputs.zip&quot;)
+<span class="k">with</span> zipfile.ZipFile(_zip, <span class="s">&quot;w&quot;</span>, zipfile.ZIP_DEFLATED) <span class="k">as</span> z:
+    <span class="k">for</span> root, _dirs, files <span class="k">in</span> os.walk(OUT_DIR):
+        <span class="k">for</span> name <span class="k">in</span> files:
+            <span class="k">if</span> name.endswith((<span class="s">&quot;.png&quot;</span>, <span class="s">&quot;.json&quot;</span>, <span class="s">&quot;.md&quot;</span>)):
+                p = os.path.join(root, name)
+                z.write(p, arcname=os.path.relpath(p, OUT_DIR))
+print(f&quot;\nbundle: {_zip}  ({os.path.getsize(_zip)/1024:.0f} KB)&quot;)
+print(<span class="s">&quot;Download it together with the executed .ipynb.&quot;</span>)</pre></details><h4>What it printed</h4><div class="outwrap"><pre class="out">CHECKS
+  [PASS] data: 100M tokens, enough windows for R1 and both continuations
+  [PASS] R1: finished its step budget
+  [PASS] R1: validation loss fell
+  [PASS] R1: never decayed (last learning rate = peak)
+  [PASS] R1: checkpoint reloads to the same validation loss
+  [PASS] conversion: clones hold R1&#x27;s slices, weights and Adam averages
+  [PASS] G1: converted logits match R1&#x27;s in fp64
+  [PASS] G1: converted validation loss matches R1&#x27;s
+  [PASS] G2: every router gets a gradient (joint rescaling)
+  [PASS] G2: the per-family rule gives no router gradient (zero up to rounding)
+  [PASS] G3: bias balancing evens out a skewed toy layer
+  [PASS] G4: parameter counts match the formula
+  [PASS] v3: R2s starts as R1 (slowed FFN keeps the function)
+  [PASS] v3: R2, R2s and R3 finished their steps
+  [PASS] v3: R3 started at R1&#x27;s validation loss
+  [PASS] G5: the MoE keeps training (loss below the conversion value by more than the noise)
+  [PASS] v3: no dead experts at the end of R3
+
+V3: 17/17 passed
+
+bundle: /content/drive/MyDrive/era5_session14/outputs/era5s14_v3_outputs.zip  (1144 KB)
+Download it together with the executed .ipynb.</pre></div><p class="outnote">17/17 passed.</p></article></section>
+<section class="grp">
+  <h2><span class="gtag">The ledger</span><span class="gname">Ten things this assignment got wrong</span></h2>
+  <div class="body"><p>Kept on purpose. Each was caught by a gate, a diagnostic or a second look at a number, not by reading
+  the code. Most produced no error message, only a plausible number.</p></div>
+  <div class="tablewrap"><table><thead><tr><th>The claim</th><th>What actually happened</th></tr></thead><tbody>
+  <tr><td class="claim">The conversion is bit-exact in fp32</td><td>Four small products round differently from one big one (2.1e-06 in fp32). Exact in maths; the gate moved to fp64 (1.3e-14).</td></tr><tr><td class="claim">Rescale each family's chosen weight to 1</td><td>The router would get no gradient at all. Caught on paper; Cell 13 measures it at exactly 0.0.</td></tr><tr><td class="claim">R1 will end at 4.2&ndash;4.4 without decay</td><td>It ended at 4.1230, within 0.009 of session 13's decayed run. That comparison could not isolate the decay anyway.</td></tr><tr><td class="claim">A bias step of 0.01 fixes the collapse</td><td>It did on the laptop's tiny model. On the T4 the load still collapsed (MaxVio 1.96). The fix was a 10&times; slower router.</td></tr><tr><td class="claim">The loss rises because clones are picked at random, or because the router moves</td><td>A fixed token-to-clone table, with no randomness and no router choice, rose the most (+0.0670). The cause was the experts' learning rate.</td></tr><tr><td class="claim">The warm-up's early dip is the MoE</td><td>A dense model with the same warm-up dipped too (-0.0683): it was the learning rate.</td></tr><tr><td class="claim">A 300-step preview is enough</td><td>The switch to best-score selection was at step 300, exactly where it ended. It was lengthened to 450.</td></tr><tr><td class="claim">Falling back to the runtime disk is harmless</td><td>In two runs it printed a warning and carried on, rebuilding the data and retraining R1. The notebook now stops if Drive does not mount.</td></tr><tr><td class="claim">MaxVio 0.214 at the end of R3</td><td>A one-step log window. Over 25-step windows: 0.026.</td></tr><tr><td class="claim">The MoE's extra parameters helped, so it won</td><td>It beat the fair control (-0.0336), but the ordinary dense model finished ahead (+0.0175).</td></tr>
+  </tbody></table></div>
+  <div class="callout warn">
+    <h4>The lead the decay took away</h4>
+    <p>For most of the run the MoE was <b>ahead</b> of the ordinary dense model: -0.0229 at 39.8M tokens. Then the
+    learning rate was lowered for the last 20%, and the dense model gained far more from it. It finished +0.0175 in
+    the dense model's favour.</p>
+    <p>The likely reason (not tested): the MoE's experts had been taking 1/8-size steps all along, so shrinking every step
+    at the end gave them less to gain. Quoting the MoE's mid-run lead would have been true, flattering and misleading.</p>
+  </div>
+</section>
+<footer class="foot">Generated from <code>notebooks/session14_moe_v3_executed.ipynb</code> and the runs' <code>outputs/v*/summary.json</code>:
+source and output are extracted from the executed notebook, not transcribed. Run: Tesla T4, torch 2.11.0+cu128,
+seed 1337, 17/17 acceptance checks passing. Companion reports: the results report, the build plan and execution
+record, and the session report (links in the README).</footer>
+</div></body></html>

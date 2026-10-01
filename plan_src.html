@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dense-to-MoE Assignment</title>
+<!--CSS-->
+<style>
+.chip{display:inline-block;font-family:var(--sans);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+  font-weight:700;border-radius:999px;padding:3px 10px;margin-left:8px;vertical-align:middle}
+.chip.wait{color:var(--open);background:var(--open-bg);border:1px solid var(--open-line)}
+.chip.ready{color:var(--ok);background:var(--ok-bg);border:1px solid var(--ok-line)}
+.chip.block{color:var(--ink3);background:var(--panel2);border:1px solid var(--line)}
+.chip.done{color:var(--bg);background:var(--ok);border:1px solid var(--ok)}
+.chip.miss{color:var(--flag);background:var(--flag-bg);border:1px solid var(--flag-line)}
+.rec{font-family:var(--sans);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  color:var(--ok);background:var(--ok-bg);border:1px solid var(--ok-line);border-radius:5px;padding:1px 7px;margin-left:6px}
+.sample{font-family:var(--mono);font-size:.84rem;background:var(--code);border:1px solid var(--line);
+  border-radius:8px;padding:10px 14px;margin:10px 0;line-height:1.55}
+.sample b{color:var(--c2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Session 14 assignment — from a dense model to a mixture of experts</h1>
+<p class="sub">Train a dense model, turn its feed-forward layers into a mixture of experts, and show that the MoE keeps training and its loss keeps falling. This one document is both the plan and the record of what happened. Read it top to bottom.</p>
+<p class="meta">
+ERA V5 &middot; Session 14 &middot; working document, started 28 Sep 2026, last updated 29 Sep 2026<br>
+<b>Status:</b> <b>done.</b> v3 ran on the T4 ({{f_pass}}). The converted MoE kept learning: {{f_conv}} &rarr; {{f_R3}}. It beat the dense model given the same slowed FFN, but the ordinary dense model finished {{f_gap_R2_abs}} ahead of it (<a href="#m3">Section 14</a>). The results report is published: <a href="https://claude.ai/artifact/7Ppswkd1eQZjMJHQR89sQc">Dense to MoE Results</a>.<br>
+<b>Where things live:</b> <code>session 14/assignment/</code>. The session report (<code>docs/session14_report.html</code>) explains the MoE concepts used here.
+</p>
+
+<figure>
+<div class="svgscroll">
+<svg viewBox="0 0 700 96" role="img" aria-label="Three milestones: v1 the dense model, done; v2 the conversion and gates, next; v3 the full comparison, later.">
+<!--MILESTONES-->
+</svg></div>
+<figcaption>The assignment is delivered in versions of one notebook. Each is run on Colab and read here before the next is built. v2 exposed a problem, so a short diagnostic (v2.1) comes before v3.</figcaption>
+</figure>
+
+<div class="toc">
+<h4>Contents</h4>
+<ul>
+<li class="tp">The plan
+<ul>
+<li><a href="#brief">1. The brief, and what it really asks</a></li>
+<li><a href="#work">2. How we work: three versions, six stages</a></li>
+<li><a href="#decisions">3. Decisions and why</a></li>
+<li><a href="#conv">4. How the conversion works (option E)</a></li>
+<li><a href="#runs">5. The runs, and what gets measured</a></li>
+</ul></li>
+<li class="tp">What happened
+<ul>
+<li><a href="#m1">6. Milestone 1 (v1): the dense model — results</a></li>
+<li><a href="#m2">7. Milestone 2 (v2) — the conversion: built, tested, one finding fixed</a></li>
+<li><a href="#m2t4">8. Milestone 2 on the T4: the conversion is exact, but the MoE did not keep learning</a></li>
+<li><a href="#m21">9. Next: find the cause before changing the design (v2.1)</a></li>
+<li><a href="#m21t4">10. Milestone 2.1 on the T4: what the diagnostic found</a></li>
+<li><a href="#m22">11. Next: test the experts' learning rate (v2.2)</a></li>
+<li><a href="#m22t4">12. Milestone 2.2 on the T4: a smaller expert learning rate turns the MoE around</a></li>
+<li><a href="#v3plan">13. Next: v3, the full comparison, and the decisions it needs</a></li>
+<li><a href="#m3">14. Milestone 3 (v3): the full comparison, the result</a></li>
+</ul></li>
+<li class="tp">Reference
+<ul>
+<li><a href="#repo">15. Files</a></li>
+<li><a href="#log">16. Build log</a></li>
+</ul></li>
+</ul>
+</div>
+
+<div class="box take"><span class="lbl">The result in brief</span>
+<ul>
+<li><b>The assignment:</b> a dense model (R1, 22.5M parameters, 50M tokens) was converted into a mixture of experts with 32 experts per layer and 114.4M parameters, doing the same work per token. The conversion was exact, and the MoE <b>kept training</b>: validation loss {{f_conv}} &rarr; {{f_R3}} over 50M more tokens, with no dead experts.</li>
+<li><b>Getting there took two diagnostics.</b> The first MoE lost ground after conversion (Section 8). The causes were a router that moved too fast (fixed by slowing it 10&times;) and experts that learned too fast for the eighth of the data each one sees (fixed by slowing them to 1/8). See Sections 10 and 12.</li>
+<li><b>Against the dense model:</b> the MoE beat a dense model given the same slowed FFN by {{f_gap_R2s_abs}}, so its extra parameters helped. It led the ordinary dense model for most of the run, but finished {{f_gap_R2_abs}} behind it after the learning-rate decay, and ran {{f_slow}}&times; slower (Section 14).</li>
+</ul></div>
+
+<div class="box note">
+<span class="lbl">How to read this</span>
+<p>Coloured blocks mean: <b style="color:var(--ok)">GREEN</b> a decision made or a result measured &middot; <b style="color:var(--open)">BLUE</b> a question for you &middot; <b style="color:var(--flag)">RED</b> a prediction that missed or a claim that had to be corrected &middot; <b style="color:var(--jarg)">PURPLE</b> a term explained in plain English. Every measured number in Section 6 is read from the run's <code>summary.json</code> by the script that builds this page, not typed in by hand.</p>
+</div>
+
+<!-- ============================================================ THE PLAN -->
+<div class="parthead">The plan</div>
+
+<h2 id="brief">1. The brief, and what it really asks</h2>
+<div class="box note"><span class="lbl">Lesson page, section 21</span><p>"Train a Linear model and convert that into an MoE! Your call on model size and data trained on, but must show they continue to train and reduce loss!"</p></div>
+<h4>What that means in practice</h4>
+<ul>
+<li><b>"Linear model" = a dense transformer</b>: one feed-forward network (FFN) per layer. The instructor used "linear" for "dense" throughout the session.</li>
+<li>Train it, convert every FFN into experts plus a router while keeping the trained weights, then keep training.</li>
+<li><b>Proof needed:</b> a loss curve that continues across the conversion point and keeps going down.</li>
+<li><b>What we add:</b> a dense model that simply keeps training from the same point (the control). If the MoE ends lower than the control, we have measured that MoE helped, not just that it survived.</li>
+</ul>
+<figure>
+<div class="svgscroll">
+<svg viewBox="0 0 700 150" role="img" aria-label="Timeline: run 1 trains the dense model for 50M tokens; from its checkpoint, run 2 continues dense for 50M tokens and run 3 converts to MoE and trains 50M tokens.">
+<defs><marker id="t1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--ink3)"/></marker></defs>
+<g font-size="11.5">
+<rect x="20" y="55" width="250" height="40" rx="6" fill="var(--fill1)" stroke="var(--c1)"/>
+<text x="145" y="72" text-anchor="middle" font-weight="700" fill="var(--ink)">R1 dense, 50M tokens &#10003;</text>
+<text x="145" y="88" text-anchor="middle" fill="var(--ink2)">learning rate held steady</text>
+<circle cx="285" cy="75" r="9" fill="var(--c3)"/>
+<text x="285" y="118" text-anchor="middle" font-size="10.5" fill="var(--c3)">checkpoint</text>
+<path d="M295 70 Q320 30 350 30" fill="none" stroke="var(--ink3)" stroke-width="1.5" marker-end="url(#t1)"/>
+<path d="M295 80 Q320 120 350 120" fill="none" stroke="var(--ink3)" stroke-width="1.5" marker-end="url(#t1)"/>
+<rect x="355" y="10" width="325" height="40" rx="6" fill="var(--fill2)" stroke="var(--c2)"/>
+<text x="517" y="27" text-anchor="middle" font-weight="700" fill="var(--ink)">R3 convert to MoE, then 50M tokens</text>
+<text x="517" y="43" text-anchor="middle" fill="var(--ink2)">learning rate decays at the end</text>
+<rect x="355" y="100" width="325" height="40" rx="6" fill="var(--panel2)" stroke="var(--line2)" stroke-dasharray="4 3"/>
+<text x="517" y="117" text-anchor="middle" font-weight="700" fill="var(--ink)">R2 dense continues, 50M tokens (control)</text>
+<text x="517" y="133" text-anchor="middle" fill="var(--ink2)">same data order, same schedule</text>
+</g>
+</svg></div>
+<figcaption>Three runs, 150M tokens in total. R2 and R3 start from the same weights and see the same tokens in the same order; the only difference is the MoE. R1 is done (&#10003;).</figcaption>
+</figure>
+
+<h2 id="work">2. How we work: three versions, six stages</h2>
+<p>You asked to feel each step: run, learn, run (28 Sep). So the notebook is handed over three times. Each version adds cells at the end, you run it on Colab, and we read the results here before the next one is built.</p>
+<div class="tblwrap"><table>
+<tr><th>version</th><th>adds</th><th>you run</th><th>what you learn from it</th></tr>
+<tr><td><b>v1</b> <span class="chip done">done 29 Sep</span></td><td>data (100M tokens), the dense model, R1, reload gate, loss/LR plot, text samples</td><td>{{wall_min}} min on the T4, end to end</td><td>how the dense model learns under a flat learning rate; what its loss means as text; the checkpoint everything else starts from</td></tr>
+<tr class="hl"><td><b>v2</b> <span class="chip wait">next</span></td><td>the MoE layer, the converter, gates G1&ndash;G4, a short MoE preview run</td><td>a few minutes (R1 loads from Drive)</td><td>that conversion keeps the function; how the router spreads tokens over experts; clones separating</td></tr>
+<tr><td><b>v3</b></td><td>R2 and R3, 50M tokens each, analysis, figures, README</td><td>about 45&ndash;60 min</td><td>whether the MoE beats the dense control at equal work per token</td></tr>
+</table></div>
+<figure>
+<div class="svgscroll">
+<svg viewBox="0 0 700 110" role="img" aria-label="Six stages: decisions, data and dense model, MoE layer and conversion gates, the three runs, analysis, write-up.">
+<!--STAGES-->
+</svg></div>
+<figcaption>The six build stages. S0 and S1 are done. S2 and S3 are v2; S4 and S5 are v3.</figcaption>
+</figure>
+<div class="box note"><span class="lbl">Why R1 is never retrained</span><p>The cache recognises R1 by the source code of the dense model and the training loop (Cells 5 and 6), not by the version number. Those two cells are frozen after v1. The loop already has the hooks v3 needs: loading R1's weights, starting at a later window, the decay setting, and the MoE's balancing hooks. So v2 and v3 replay R1 from Drive in seconds.</p></div>
+
+<h2 id="decisions">3. Decisions and why</h2>
+<h4>Settled</h4>
+<div class="box take"><span class="lbl">Control — decided 27 Sep</span><p>A dense-continue run (R2) from the same checkpoint, same tokens, same schedule. No MoE-from-scratch run.</p></div>
+<div class="box take"><span class="lbl">Budget — decided 27 Sep: "similar to last assignment"</span><p>Session 13's settings for every run: <b>50M tokens</b>, batch 32 &times; 512, learning rate 1e-3, about 200 warm-up steps, weight decay 0.1, &beta;<sub>2</sub> 0.95, gradient clip 1.0, Colab T4 in fp16. One change: <b>warmup-stable-decay</b> instead of cosine. Cosine would have shrunk the learning rate to 10% by the conversion point, and an MoE started there would barely move.</p></div>
+<div class="box take"><span class="lbl">Carried over from session 13</span><ul>
+<li>Model: 16 layers &times; width 320, 5 heads, GELU FFN of 1,280, vocabulary 8,192, sequence 512 (22.5M parameters). The instructor approved reusing it.</li>
+<li>Data: FineWeb sample-10BT with our own 8,192-token tokenizer, retrained inside the notebook (session 13 kept no checkpoint).</li>
+<li>House conventions: <code>notebook_src.py</code> as the source, run caching, GATE cells, an outputs zip for you to hand back.</li>
+</ul></div>
+
+<h4>Decision record (28 Sep)</h4>
+
+<h3 id="d1">D1 — Conversion method: E, fine-grained <span class="chip done">decided</span></h3>
+<p>There are five reasonable ways to turn the dense FFN into experts. They differ in three things that matter here: <b>whether the converted model starts out computing what the dense model computed</b> (no loss jump), <b>how much work each token does</b> compared with the dense model, and <b>how many parameters are stored</b>. The numbers are for our 16 &times; 320 model, whose dense FFN has 1,280 neurons per layer.</p>
+<div class="tblwrap"><table>
+<tr><th>approach</th><th>how the experts start</th><th class="num">total / active</th><th>same function at the start?</th><th>pros</th><th>cons</th></tr>
+<tr><td><b>A. Copy</b><br>(sparse upcycling, Google 2022)</td><td>8 full copies of the FFN; 2 per token</td><td class="num">114.2M / 35.6M</td><td>yes</td><td>simplest code; exact start; well studied</td><td>each token does 2&times; the FFN work, so a win over the control could just be extra compute; identical copies separate slowly</td></tr>
+<tr><td><b>B. Partition</b><br>(Qwen1.5-MoE style)</td><td>1,280 neurons cut into 8 slices of 160; 2 per token</td><td class="num">22.5M / 12.7M</td><td>no: 83% of the FFN output is lost at the switch</td><td>no extra memory; experts start different</td><td>total parameters do not grow, so it is not really "more capacity"; a quarter of the work per token, so it will lose to the control</td></tr>
+<tr><td><b>C. Shared + halves</b><br>(Lightning LM style)</td><td>a shared expert = the whole FFN, plus 8 routed experts that are random halves (640)</td><td class="num">74.9M / 35.6M</td><td>only if the routed outputs start at zero</td><td>the instructor's own recipe; the shared expert keeps what the dense model knew</td><td>1.6&times; the dense work per token (ambiguous win, like A); needs an extra "how do routed experts enter" rule</td></tr>
+<tr><td><b>D. Drop-upcycling</b><br>(2025)</td><td>8 copies with half of each copy's neurons redrawn; 2 per token</td><td class="num">114.2M / 35.6M</td><td>no: a moderate jump</td><td>published best long-run results; experts start different, so no clone problem</td><td>loss jumps at the switch (harder to show "continues"); same 2&times; work issue as A</td></tr>
+<tr class="hl"><td><b>E. Fine-grained, grouped</b><br>(our choice)</td><td>4 slices of 320, each copied 8&times; = 32 experts in 4 families; 1 per family, 4 per token</td><td class="num">114.4M / 22.6M</td><td>yes (router starts at zero)</td><td>same work per token as dense, so any gain comes from the stored parameters; mirrors the reference model (8 &times; 768 = 6,144); exact start</td><td>most code; identical clones need protecting (D3); grouping is a constraint we add ourselves</td></tr>
+</table></div>
+<div class="box take"><span class="lbl">Why E</span><p>The assignment asks us to show the MoE keeps learning. All five can do that. E is the only one that also answers the more useful question, <b>"did turning it into an MoE help?"</b>, fairly. It does the same arithmetic per token as the dense control (22.6M vs 22.5M active; the extra is the routers), so the only thing it has that the control lacks is 8&times; more FFN parameters to store knowledge in. That is precisely the MoE claim from the lesson. Its exact start also means the curve cannot show a false "recovery". The costs (more code, clone protection) are engineering work, not scientific doubts.</p></div>
+
+<h3 id="d2">D2 — One expert per family, for the whole run <span class="chip done">decided</span></h3>
+<div class="tblwrap"><table>
+<tr><th>option</th><th>pros</th><th>cons</th></tr>
+<tr class="hl"><td><b>Keep grouping throughout</b> (chosen)</td><td>no second disruption, so the curve after conversion is clean; still 8<sup>4</sup> = 4,096 combinations per layer; a recognised pattern (DeepSeek-V3 limits each token to 4 nodes); every token always gets all four "parts" of the old FFN</td><td>fewer combinations than free routing; not exactly the reference model's free top-8</td></tr>
+<tr><td>Release to free top-4 of 32 after a warm-up</td><td>35,960 combinations; matches the standard design</td><td>at the release a token may take two experts from one family and none from another, which changes the function, so a bump appears mid-run; one more thing to tune (when)</td></tr>
+</table></div>
+<p><b>Why keep:</b> a clean, readable curve is the evidence the assignment asks for. A mid-run bump would need its own explanation and would blur the comparison with the control.</p>
+
+<h3 id="d3">D3 — Protecting the identical clones: probabilistic selection <span class="chip done">decided</span></h3>
+<p>The problem: the 8 experts in a family start as exact copies. If the router always takes the highest score, it keeps picking the same copy, the other 7 never receive tokens, and they die. That is the "collapse along clone families" from the instructor's Lightning LM (dead experts rose from 27 to 168 of 460).</p>
+<div class="tblwrap"><table>
+<tr><th>option</th><th>what it does</th><th>pros</th><th>cons</th></tr>
+<tr class="hl"><td><b>Probabilistic selection</b> (chosen)</td><td>for the first ~300 steps, pick the expert within each family at random, in proportion to its score; then switch to the highest score</td><td>keeps the start exact; every clone gets tokens and gradient, so they drift apart on different data; the fix the instructor's team used</td><td>randomness in early steps; one more setting (how many steps); a small change in behaviour at the switch to hard selection</td></tr>
+<tr><td>Tiny noise on each clone's weights</td><td>add a very small random change to every copy at conversion</td><td>breaks the symmetry at once; no change in routing logic</td><td>the start is no longer exact; the router may still lock onto one copy, because tiny differences give tiny score differences</td></tr>
+<tr><td>Redraw some neurons (drop-upcycling)</td><td>re-initialise part of each copy</td><td>strong symmetry breaking; published</td><td>the function changes, so the loss jumps (this is option D's cost again)</td></tr>
+<tr><td>Bias balancing only</td><td>rely on the per-expert bias to spread the load</td><td>no extra mechanism</td><td>the bias moves by 0.001 per step, so the clones need hundreds of steps to share the load; many may die first</td></tr>
+</table></div>
+<p><b>Why probabilistic:</b> it is the only option that both keeps the exact start and guarantees every clone some training from step 1.</p>
+<div class="box note"><span class="lbl">D4 and D5</span><p><b>D4, a no-balancing side run:</b> not selected; it can be added later as a short extra cell. <b>D5, the repo:</b> yours to set up; the folder is laid out so it can be committed as it is.</p></div>
+<h4>Decision record (29 Sep, after milestone 1)</h4>
+<h3 id="d6">D6 — The optimiser's memory at conversion: copy it <span class="chip done">decided</span></h3>
+<p>AdamW keeps two running averages for every weight: the recent average gradient (momentum) and the recent average squared gradient (scale). R1 has them for every dense FFN weight; the 32 experts are new tensors. <b>Decision:</b> each expert starts with the averages of the dense slice it was copied from, and keeps R1's step count. The router, which is new, starts with empty averages.</p>
+<div class="tblwrap"><table>
+<tr><th>option</th><th>pros</th><th>cons</th></tr>
+<tr class="hl"><td><b>Copy the moments</b> (chosen)</td><td>the first MoE step moves each expert exactly as the next dense step would have moved that slice; any change in the curve is then caused by the MoE, not by the optimiser; R2 keeps its moments too, so the comparison is fair</td><td>a few more lines in the converter, and a check that the copied state matches</td></tr>
+<tr><td>Reset the expert moments</td><td>simpler</td><td>on empty averages Adam's first steps move every weight by about the full learning rate at once; that jolt would show as a loss bump that R2 does not have</td></tr>
+<tr><td>Reset everything</td><td>simplest</td><td>the same jolt across all 22.5M weights</td></tr>
+</table></div>
+<div class="box jarg"><span class="lbl">Why an empty average makes a big first step</span><p>Adam divides each gradient by the square root of its recent squared average, so a weight's step is roughly <i>learning rate &times; (average gradient &divide; typical gradient size)</i>. On a fresh start, both averages hold just the first gradient, the ratio is about 1, and every weight moves by about the full learning rate, 0.001. After thousands of steps the averages are smooth and most steps are much smaller. Copying the averages keeps the experts in that calm state.</p></div>
+<p><b>Why the router is the exception:</b> it has no history to copy. It starts at zero, so all 32 experts score the same, and the first step keeps the dense function whatever the router's first update is.</p>
+
+<h3 id="d7">D7 — The v2 preview run: 300 steps <span class="chip done">decided</span> <span class="chip wait">revised 29 Sep: see below</span></h3>
+<p><i>Update 29 Sep:</i> the laptop test found that the problem worth seeing starts exactly at step 300, where D7's preview ends. It was revised to 450 steps: see <a href="#d7r">D7, revised</a>.</p>
+<p>v2 ends with a short MoE run, so you can watch the converted model train before the full comparison. <b>Decision:</b> 300 steps (about 4.9M tokens), starting at the first window after R1's data, the same text R3 will read. It is a throwaway look: v3's R3 starts again from the conversion point.</p>
+<div class="tblwrap"><table>
+<tr><th>option</th><th>pros</th><th>cons</th></tr>
+<tr class="hl"><td><b>300 steps</b> (chosen)</td><td>a few minutes; long enough to see the loss keep falling, every expert get tokens, and clones start to separate</td><td>it covers only the probabilistic-selection phase (D3 uses it for the first 300 steps), so the switch to hard selection is first seen in v3</td></tr>
+<tr><td>600 steps or more</td><td>would also show the switch to hard selection</td><td>twice the time, for a run that is thrown away</td></tr>
+</table></div>
+<p><b>Why 300 is enough:</b> the preview answers "does the converted model train at all, and do the clones come apart?" The hard-selection path is not left untested: evaluation always uses hard selection, so every validation number in the preview exercises it.</p>
+
+
+<h3 id="d7r">D7, revised — The v2 preview run: 450 steps <span class="chip done">decided 29 Sep</span></h3>
+<p><b>What changed:</b> the laptop test showed that the fragile moment is the switch from probabilistic to hard selection, at step 300 (D3). A 300-step preview would stop exactly there. <b>Decision:</b> 450 steps, that is 300 probabilistic and then 150 hard (about 7.4M tokens).</p>
+<div class="tblwrap"><table>
+<tr><th>option</th><th>pros</th><th>cons</th></tr>
+<tr class="hl"><td><b>450 steps</b> (chosen)</td><td>the preview crosses the switch, so the fix (D8) is tested on the real 16 &times; 320 model before the full runs; a problem found in v2 costs minutes, not the 45&ndash;60 minutes of v3</td><td>about 50% longer than planned; a bigger throwaway checkpoint on Drive (about 1.4 GB; it can be deleted)</td></tr>
+<tr><td>Keep 300 steps</td><td>shorter</td><td>the switch is first seen in R3, in v3; if the fix did not work at full size, the long run would be wasted</td></tr>
+</table></div>
+<p><b>Why:</b> a preview is only useful if it goes through the risky part. The extra 150 steps are the part we most need to see.</p>
+
+<h3 id="d8">D8 — Keeping the load even after the switch: bias step 0.01 <span class="chip done">decided 29 Sep</span></h3>
+<p><b>The problem:</b> when selection switches from "draw at random in proportion to the score" to "take the highest", the 8 clones in each family are still nearly identical, and almost every token goes to whichever clone is a hair ahead. The balancing bias is meant to push back. At the lesson's step of 0.001 it is too slow here: on the laptop, MaxVio stayed above 1 for 200 steps (the busiest expert got more than twice its share), and in the short preview an expert died. <b>Decision:</b> raise the bias step to 0.01.</p>
+<div class="tblwrap"><table>
+<tr><th>option</th><th>what it does</th><th>pros</th><th>cons</th></tr>
+<tr class="hl"><td><b>A. Bias step 0.01</b> (chosen)</td><td>each expert's choosing-bias moves 10&times; faster towards its fair share</td><td>one number changes; hard selection stays, so training and evaluation pick experts the same way; on both laptop seeds the spike after the switch peaked near 0.2 and settled to about 0.07 within about 40 steps; loss no worse than any other fix; no change to the frozen cells, so R1 is not retrained</td><td>departs from the lesson's 0.001 (tuned for much longer runs); a big step makes the bias jitter around the balance point, leaving a small MaxVio floor (about 0.07); the size of the effect on the real model is not yet measured, which is why the preview now crosses the switch (D7 revised)</td></tr>
+<tr><td>B. Router 10&times; slower</td><td>gives the router its own, smaller learning rate</td><td>similar settling on the laptop; best loss on one seed</td><td>needs a separate optimiser setting for the router, which means editing Cell 6; that cell is frozen, and editing it would retrain R1 (the cache keys on its code)</td></tr>
+<tr><td>C. Sample throughout</td><td>never switch to hard selection in training</td><td>the load stays even the whole way (MaxVio about 0.05)</td><td>the worst loss on both seeds, by about 0.07: training chooses at random but evaluation chooses the best, so the model is evaluated on choices it was not trained to make</td></tr>
+<tr><td>D. Keep 0.001</td><td>the lesson's value</td><td>matches the reference recipe</td><td>MaxVio above 1 for 200+ steps after the switch and a dead expert in the preview: exactly the collapse the lesson warns about</td></tr>
+</table></div>
+<div class="box take"><span class="lbl">Why A</span><p>It is the smallest change that fixes the measured problem, and it keeps the mechanism the lesson teaches (a bias that only steers the choice, never the loss). It only changes how fast that mechanism reacts. The lesson's 0.001 was set for training runs with vastly more steps; our continuation is about 3,000 steps, so the bias has to react faster. With the change, the laptop test passed all 16 checks, with no dead experts after the switch.</p></div>
+<div class="box flag"><span class="lbl">What would make us revisit it</span><p>If the T4 preview shows MaxVio staying high after step 300, or dead experts, the next step is option B done without touching Cell 6 (for example, scaling the router's output by a small constant). If it shows the load jittering a lot (MaxVio staying well above 0.1), a step between 0.001 and 0.01 would be the compromise.</p></div>
+
+<h2 id="conv">4. How the conversion works (option E)</h2>
+<p><b>Step 1: cut, then copy.</b> The dense FFN's output is exactly the sum of its 4 neuron slices of 320, because GELU acts on each neuron separately. Each slice is copied 8 times, giving 32 experts in 4 families.</p>
+<figure>
+<div class="svgscroll">
+<!--EFIG-->
+</div>
+<figcaption>32 experts in 4 families of 8 identical copies. At the start, one expert per family is used with weight 1, so the layer computes what the dense FFN computed.</figcaption>
+</figure>
+<p><b>Step 2: how the router weights the four chosen experts.</b> The obvious rule, rescaling the chosen weight inside each family to 1, has a hidden flaw. With one pick per family, that weight is always exactly 1, whatever the router says. So the language loss would never send a gradient to the router, and it would never learn. The fix is to rescale the four chosen scores <b>together</b> so they sum to 4, which is a routed scaling factor of 4 (the lesson's Section 12).</p>
+<figure>
+<div class="svgscroll">
+<svg viewBox="0 0 700 190" role="img" aria-label="Left: per-family rescaling always gives weight 1, so the router gets no gradient. Right: rescaling the four chosen scores together to sum to 4 gives exactly 1 each at the start, then different weights once the router has learned, so it receives a gradient.">
+<text x="170" y="20" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--flag)">rescale inside each family</text>
+<text x="525" y="20" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ok)">rescale the 4 chosen together, sum = 4</text>
+<g font-size="11">
+<text x="20" y="54" fill="var(--ink2)">scores</text>
+<text x="20" y="92" fill="var(--ink2)">weights</text>
+<!--WEIGHTS-->
+</g>
+<line x1="345" y1="10" x2="345" y2="180" stroke="var(--line)"/>
+<text x="170" y="140" text-anchor="middle" font-size="11" fill="var(--ink2)">always 1 whatever the scores are,</text>
+<text x="170" y="156" text-anchor="middle" font-size="11" font-weight="700" fill="var(--flag)">so the router never learns</text>
+<text x="525" y="140" text-anchor="middle" font-size="11" fill="var(--ink2)">start (router at zero): 1, 1, 1, 1 = the dense FFN</text>
+<text x="525" y="156" text-anchor="middle" font-size="11" fill="var(--ink2)">later: the weights differ, so the loss</text>
+<text x="525" y="172" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ok)">sends the router a gradient</text>
+</svg></div>
+<figcaption>Example scores for the four chosen experts (one per family). The router starts at zero, so all scores start equal and the first step computes the dense model.</figcaption>
+</figure>
+<div class="box jarg"><span class="lbl">In plain terms</span><p>The router has two jobs: <b>which</b> expert in each family, and <b>how much</b> each family's expert counts. The bias balancing (lesson Section 18) steers the "which". The weights summing to 4 give the router a "how much" to learn from.</p></div>
+<div class="box flag"><span class="lbl">Corrected 29 Sep — "exact" means the same maths, not bit-identical numbers</span><p>This section first promised a bit-exact start. That is wrong, and a test found it while preparing v2. The four slices add up to the dense output <b>mathematically</b>, but a computer adds numbers in a different order when it does four small products instead of one big one, and the last digits round differently. On random weights of our shapes the difference is about {{rt_fp32}} relative in fp32 and {{rt_fp64}} in fp64: rounding, not an error. So gate G1 now checks in fp64 (must agree to about 1e-12) and reports the fp32 difference as the rounding floor. See <a href="#m2fix">Section 7</a>.</p></div>
+
+<h2 id="runs">5. The runs, and what gets measured</h2>
+<div class="tblwrap"><table>
+<tr><th>run</th><th>starts from</th><th class="num">tokens</th><th class="num">total params</th><th class="num">active params</th><th>schedule</th><th>status</th></tr>
+<tr><td>R1 dense</td><td>random</td><td class="num">50M</td><td class="num">22.5M</td><td class="num">22.5M</td><td>warm-up, then flat</td><td><span class="chip done">done</span></td></tr>
+<tr><td>R2 dense control</td><td>R1</td><td class="num">50M</td><td class="num">22.5M</td><td class="num">22.5M</td><td>flat, decay in the last 20%</td><td>v3</td></tr>
+<tr class="hl"><td>R3 MoE (E)</td><td>R1, converted</td><td class="num">50M</td><td class="num">114.4M</td><td class="num">22.6M</td><td>flat, decay in the last 20%</td><td>v3</td></tr>
+</table></div>
+<p>Time: R1 measured {{r1_train_min}} minutes of training at {{r1_tps}} tokens/s, so R2 should take about the same. R3 is a guess until measured, probably 25&ndash;45 minutes, because 32 small experts per layer are less efficient on the GPU than one large FFN.</p>
+<h4>Gates (the notebook stops if one fails)</h4>
+<ul>
+<li><b>G1 conversion keeps the function:</b> on a fixed batch, the converted model's logits and loss match the dense model's: to about 1e-12 in fp64, and to the rounding floor in fp32 (corrected 29 Sep, see above).</li>
+<li><b>G2 router learns:</b> after one backward pass the router's gradient is non-zero. This catches the per-family rescaling flaw in <a href="#conv">Section 4</a>.</li>
+<li><b>G3 balancing works:</b> on a toy layer with a deliberately skewed router, the bias method brings MaxVio down within a few hundred steps.</li>
+<li><b>G4 bookkeeping:</b> total and active parameter counts printed from the model match the table above.</li>
+<li><b>G5 keeps training</b> (after R3): the final validation loss is below the value at conversion by more than the measured noise.</li>
+</ul>
+<p><b>Recorded:</b> validation loss every 2.5M tokens and train loss every 25 steps; per-layer, per-expert token counts (from these: MaxVio over time, dead-expert count, load heatmaps); tokens/s and peak memory. The README is generated from <code>summary.json</code>.</p>
+
+<!-- ============================================================ WHAT HAPPENED -->
+<div class="parthead">What happened</div>
+
+<h2 id="m1">6. Milestone 1 (v1): the dense model — results</h2>
+<p class="sub" style="margin-bottom:14px">Run on {{run_date}}, Colab {{gpu}}, torch {{torch}}. {{v1_pass}} checks passed. Total time {{wall_min}} minutes, start to finish.</p>
+
+<h3 id="m1a">6.1 What v1 set out to do, and what we predicted</h3>
+<p>v1 had three jobs: prepare the data once, train the dense model (R1) on the first 50M tokens with a flat learning rate, and save a checkpoint that v2 can convert. Before the run, the plan wrote down what we expected to see. Writing predictions first is what makes a result informative: a surprise only counts if the expectation was written down beforehand.</p>
+
+<h3 id="m1b">6.2 The data</h3>
+<div class="tblwrap"><table>
+<tr><th>what</th><th class="num">measured</th><th>plain meaning</th></tr>
+<tr><td>training tokens</td><td class="num">{{train_tokens}}</td><td>{{train_windows}} windows of 513 tokens, shuffled once</td></tr>
+<tr><td>R1 read</td><td class="num">windows 0&ndash;{{r1_last_win}}</td><td>the first 50.0M tokens of that order</td></tr>
+<tr><td>R2 and R3 will read</td><td class="num">windows {{cont_first}}&ndash;{{cont_last}}</td><td>the next 50.0M: text R1 has never seen</td></tr>
+<tr><td>validation tokens</td><td class="num">{{val_tokens}}</td><td>separate documents, never trained on; built the same way as session 13's (the first documents of the stream)</td></tr>
+<tr><td>characters per token</td><td class="num">{{cpt}}</td><td>the tokenizer packs about 3.7 letters into each token (session 13: {{s13_cpt}})</td></tr>
+<tr><td>time to prepare</td><td class="num">{{data_min}} min</td><td>streaming FineWeb, training the tokenizer, tokenising 101.5M tokens; saved to Drive, never repeated</td></tr>
+</table></div>
+<p>The sentence "A mixture of experts runs only a few small networks for each token." became 17 tokens and decoded back to exactly the same text, so the tokenizer loses nothing.</p>
+
+<h3 id="m1c">6.3 R1: how the dense model learned</h3>
+<figure>
+<div class="svgscroll">
+<svg viewBox="0 0 700 295" role="img" aria-label="R1 loss against training tokens: validation loss falls from about 9.08 to 4.12, steeply at first and then slowly; the train loss follows it; a dashed line marks session 13's final loss of 4.11.">
+<!--R1CURVE-->
+</svg></div>
+<figcaption>R1's loss. Dots: validation loss every 2.5M tokens on the same 327,680 held-out tokens. Thin line: training loss, averaged over 25 steps. Dashed: session 13's run A final validation loss, which used a decaying learning rate.</figcaption>
+</figure>
+<div class="tblwrap"><table>
+<tr><th>measure</th><th class="num">R1</th><th class="num">session 13 run A</th><th>reading</th></tr>
+<tr><td>validation loss before training</td><td class="num">{{r1_val0}}</td><td class="num">&#8212;</td><td>ln 8,192 = 9.011 is "all tokens equally likely"; a random model starts close to it</td></tr>
+<tr><td>after 10M tokens</td><td class="num">{{r1_val10}}</td><td class="num">&#8212;</td><td>{{share10}}% of the whole drop happened in the first fifth of the run</td></tr>
+<tr><td>final validation loss</td><td class="num"><b>{{r1_final}}</b></td><td class="num">{{s13_final}}</td><td>{{gap_s13}} higher than session 13, with no decay</td></tr>
+<tr><td>fall over the last 10M tokens</td><td class="num">{{last10_drop}}</td><td class="num">&#8212;</td><td>still learning at the end: about {{rate_per_m}} per million tokens</td></tr>
+<tr><td>final training loss</td><td class="num">{{r1_final_train}}</td><td class="num">{{s13_final_train}}</td><td>above validation: every token is seen once, so there is no overfitting; the train number is a noisy 11-step mean</td></tr>
+<tr><td>speed</td><td class="num">{{r1_tps}} tok/s</td><td class="num">{{s13_tps}} tok/s</td><td>{{tps_diff}} different: the same model on the same GPU</td></tr>
+<tr><td>peak memory</td><td class="num">{{r1_peak}} MiB</td><td class="num">{{s13_peak}} MiB</td><td>the same; T4 has 15,000 MiB, so memory is not a limit here</td></tr>
+</table></div>
+<div class="box jarg"><span class="lbl">What a loss of 4.12 means</span><p>The loss is the average "surprise" per token: minus the log of the probability the model gave to the real next token. e<sup>4.12</sup> &asymp; {{ppl}}, so on average the model is as unsure as if it were choosing between about {{ppl}} equally likely tokens out of 8,192. Before training it was choosing between all of them (e<sup>9.08</sup> &asymp; 8,760, slightly worse than uniform because the random weights are not perfectly flat).</p></div>
+
+<h3 id="m1d">6.4 Predictions against results</h3>
+<div class="tblwrap"><table>
+<tr><th>written before the run</th><th>measured</th><th>verdict</th></tr>
+<tr><td>58% of the parameters are in the FFN layers</td><td>{{ffn_share}}% ({{ffn_m}}M of {{total_m}}M)</td><td><span class="chip done">held</span></td></tr>
+<tr><td>about 3.7 characters per token</td><td>{{cpt}}</td><td><span class="chip done">held</span></td></tr>
+<tr><td>data preparation 10&ndash;20 minutes</td><td>{{data_min}} min</td><td><span class="chip miss">missed</span> faster than expected</td></tr>
+<tr><td>validation about 9.0 before training</td><td>{{r1_val0}}</td><td><span class="chip done">held</span></td></tr>
+<tr><td>final validation 4.2&ndash;4.4, a little above session 13's 4.11 because there is no decay</td><td>{{r1_final}}</td><td><span class="chip miss">missed</span> lower than predicted (see 6.5)</td></tr>
+<tr><td>speed close to session 13's 53,000 tokens/s</td><td>{{r1_tps}}</td><td><span class="chip done">held</span></td></tr>
+<tr><td>the checkpoint reloads to the same loss</td><td>difference {{reload_diff}}</td><td><span class="chip done">held</span> exactly</td></tr>
+</table></div>
+
+<h3 id="m1e">6.5 Why R1 ended so close to session 13, and what we can and cannot conclude</h3>
+<p>The plan predicted that dropping the learning-rate decay would cost R1 about 0.1&ndash;0.3 in final loss. It cost {{gap_s13}}. Three things differ between the two runs, so this is not a clean measurement of "what decay is worth":</p>
+<ul>
+<li><b>The schedule.</b> Session 13 decayed (cosine down to 10%); R1 stayed flat. This is the difference the prediction was about.</li>
+<li><b>The training text.</b> Session 13 shuffled a 50.5M-token file. R1 took 50M tokens from a shuffled 100.5M-token file, so it saw a different sample of FineWeb, drawn from twice as many documents. The validation set is built the same way, from the same first documents of the stream.</li>
+<li><b>Chance.</b> Each run was done once, with one seed. We have not measured how much two otherwise identical runs differ, so a gap of {{gap_s13}} could be partly or wholly noise.</li>
+</ul>
+<div class="box flag"><span class="lbl">What this does and does not tell us</span><p>It does <b>not</b> show that decay is worth only {{gap_s13}}. It does show that a flat learning rate cost little here, and that R1 was still improving at the end ({{last10_drop}} over the last 10M tokens). That is exactly the state we wanted to convert from: a model that can still learn quickly. The value of decay will be <b>measured cleanly in v3</b>: R2 is the same model on the same data with and without its final 20% decay phase, so the drop during that phase is the decay effect.</p></div>
+
+<h3 id="m1f">6.6 What the text samples show</h3>
+<p>The model continued three prompts (temperature 0.8, top-40 sampling):</p>
+<!--SAMPLES-->
+<p><b>Reading them:</b> the words are real, and the grammar holds for a clause or two. Sentences start sensibly ("The best way to learn a new language is to try to&hellip;"), then lose the thread and repeat a phrase ("a new generation of people" three times). There are no facts. This is what a loss of about 4.1 looks like in a 22M-parameter model that has seen 50M tokens: it has learned the local shape of English, not its meaning. The MoE will be judged against this.</p>
+
+<h3 id="m1g">6.7 The v1 notebook, cell by cell</h3>
+<div class="tblwrap"><table>
+<tr><th>cell</th><th>what it did</th><th>what it printed (full run)</th></tr>
+<tr><td>1 environment</td><td>imports, seed 1337, picked the <code>full</code> profile</td><td>Tesla T4, 15.6 GB; torch {{torch}}</td></tr>
+<tr><td>2 configuration</td><td>model, schedule and data settings; parameter breakdown</td><td>16 &times; 320, {{total_m}}M parameters, FFN {{ffn_share}}%; {{steps}} steps of 32 &times; 512</td></tr>
+<tr><td>3 storage</td><td>mounted Drive; cache and outputs folders; the run fingerprint</td><td>base key <code>{{base_key}}</code></td></tr>
+<tr><td>4 data</td><td>streamed FineWeb, trained the tokenizer, tokenised 100.5M + 1M tokens</td><td>{{data_min}} min; {{cpt}} chars/token; round trip exact</td></tr>
+<tr><td>5 dense model (frozen)</td><td>the GPT; the FFN kept as its own module for v2 to replace</td><td>{{n_params}} parameters, matching the breakdown</td></tr>
+<tr><td>6 training loop (frozen)</td><td>AdamW, WSD schedule, fp16, evaluation, checkpoints, final save</td><td>eval every 2.5M tokens on 327,680 tokens</td></tr>
+<tr><td>7 R1</td><td>trained {{steps}} steps from random weights</td><td>val {{r1_val0}} &rarr; {{r1_final}}; {{r1_tps}} tok/s; peak {{r1_peak}} MiB</td></tr>
+<tr><td>8 reload gate</td><td>loaded R1's final checkpoint into a fresh model and re-evaluated</td><td>difference {{reload_diff}}; Adam moments saved (step {{steps}})</td></tr>
+<tr><td>9 curves and samples</td><td>the loss/learning-rate figure and the three samples</td><td><code>r1_loss_lr.png</code></td></tr>
+<tr><td>10 checks and bundle</td><td>the 5 checks, <code>summary.json</code>, <code>RESULTS.md</code>, the zip</td><td>V1: {{v1_pass}} passed</td></tr>
+</table></div>
+
+<h3 id="m1h">6.8 What v1 means for v2</h3>
+<div class="box take"><span class="lbl">Carry forward</span><ul>
+<li><b>The starting point is fixed:</b> R1's checkpoint, validation loss {{r1_final}}, saved with its optimiser state and reloading exactly.</li>
+<li><b>The converted model must start at {{r1_final}}.</b> If option E is implemented correctly, the MoE's validation loss before its first step equals R1's (to rounding). A different number means a conversion bug.</li>
+<li><b>The model is still learning</b> (about {{rate_per_m}} per million tokens at the end), and the learning rate is still at its peak, so the MoE starts in a state where it can change quickly.</li>
+<li><b>Speed budget:</b> dense training runs at {{r1_tps}} tokens/s. The MoE has the same work per token, so any slowdown in v2/v3 is the cost of routing and small matrices, and it will be measured.</li>
+</ul></div>
+
+<h2 id="m2">7. Milestone 2 (v2) — the conversion: built, tested, one finding fixed</h2>
+<p>v2 was built on 29 Sep. It adds Cells 10&ndash;16 after v1's and does <b>not</b> touch Cells 5&ndash;6, so R1 reloads from Drive instead of retraining. The laptop test confirmed that it does. On the laptop's tiny model, the first test passed 15 of 16 checks. The one failure was not a bug in the check: it exposed a real weakness in the plan (<a href="#m2find">Section 7.4</a>). Two decisions followed (<a href="#d8">D8</a>, <a href="#d7r">D7 revised</a>), and with them the laptop test passed {{cpu_pass}}. v2 is ready for Colab.</p>
+<div class="tblwrap"><table>
+<tr><th>cell</th><th>what it does</th><th>what you should see on the T4</th></tr>
+<tr><td>10 v1 checks</td><td>re-checks v1's five promises; everything below starts from R1</td><td>5 PASS; R1 replayed, not retrained</td></tr>
+<tr><td>11 the MoE layer</td><td><code>FamilyMoE</code>: router (fp32, starts at zero), 32 experts stored as stacked matrices, one pick per family, the four weights rescaled to sum to 4, a per-expert bias for choosing, probabilistic selection early on, token counts per expert, the small per-sequence balance loss</td><td>{{moe_total}}M total, {{moe_active}}M active parameters</td></tr>
+<tr><td>12 the converter</td><td>cuts each of R1's 16 FFNs into 4 slices of 320 and copies each slice into 8 experts; copies AdamW's averages the same way (D6); carries the loss scaler</td><td>PASS: every clone holds its slice, weights and Adam averages; router state empty</td></tr>
+<tr><td>13 gates</td><td>G1 same function (fp64 logits; fp32 floor; GPU validation loss vs R1's); G2 router gradient, ours vs the flawed rule; G3 bias balancing on a skewed toy layer; G4 parameter counts</td><td>all PASS; converted validation loss {{r1_final}} (R1's)</td></tr>
+<tr><td>14 preview run</td><td>the converted MoE trained for 450 steps (300 probabilistic, then 150 hard) on the continuation data; loads, MaxVio, dead experts and clone distance logged every 25 steps</td><td>loss keeps falling from {{r1_final}}; all 512 experts (32 &times; 16 layers) in use</td></tr>
+<tr><td>15 figures</td><td>loss across the conversion; MaxVio, dead experts and clone distance over steps; a load heatmap</td><td><code>v2_preview.png</code></td></tr>
+<tr><td>16 checks and bundle</td><td>v1's and v2's checks, <code>summary.json</code>, <code>RESULTS.md</code>, the zip</td><td>V2: 16/16 passed</td></tr>
+</table></div>
+
+<h3 id="m2fix">7.1 A correction found while preparing v2</h3>
+<p>The plan promised a <b>bit-exact</b> conversion in fp32. A test on the laptop (random weights, our shapes: 4,096 tokens, 320 &rarr; 1,280 &rarr; 320) showed that the four-slice sum and the single FFN are not bit-identical:</p>
+<div class="tblwrap"><table>
+<tr><th>precision</th><th class="num">largest relative difference</th><th>bit-identical?</th><th>meaning</th></tr>
+<tr><td>fp32</td><td class="num">{{rt_fp32}}</td><td>no</td><td>rounding from a different order of additions</td></tr>
+<tr><td>fp64</td><td class="num">{{rt_fp64}}</td><td>no</td><td>the same, 100 million times smaller: the maths is identical</td></tr>
+</table></div>
+<p>Computers round after every addition, so (a + b) + c can differ from a + (b + c) in the last digit. One big matrix product and four smaller ones sum the same 1,280 terms in different groupings. So G1 gates in fp64, where the maths shows through, and reports the fp32 difference as a floor rather than demanding zero.</p>
+
+<h3 id="m2q">7.2 The optimiser's memory <span class="chip done">decided 29 Sep: copy</span></h3>
+<p>Each expert starts with AdamW's averages from the dense slice it was copied from, and keeps R1's step count; the router starts empty. Reasons and alternatives: <a href="#d6">D6</a>.</p>
+
+<h3 id="m2cpu">7.3 What the laptop test showed (tiny model, not the experiment)</h3>
+<div class="tblwrap"><table>
+<tr><th>gate</th><th>measured on the laptop</th><th>reading</th></tr>
+<tr><td>conversion state</td><td>PASS</td><td>every clone holds R1's slice; weights and both Adam averages match bit for bit</td></tr>
+<tr><td>G1 fp64</td><td class="num">{{cpu_g1_64}}</td><td>the converted model computes R1's function; only rounding differs</td></tr>
+<tr><td>G1 fp32</td><td class="num">{{cpu_g1_32}}</td><td>the rounding floor, as predicted in 7.1</td></tr>
+<tr><td>G1 validation loss</td><td class="num">{{cpu_val_moe}} vs {{cpu_val_r1}}</td><td>the MoE starts exactly where the dense model stopped</td></tr>
+<tr><td>G2 router gradient</td><td class="num">{{cpu_g2_joint}} vs {{cpu_g2_flawed}}</td><td>ours gets a gradient; the per-family rule gets <b>exactly zero</b>, which confirms in code the flaw found on paper on 28 Sep</td></tr>
+<tr><td>G3 toy balancing</td><td class="num">MaxVio {{cpu_g3_start}} &rarr; {{cpu_g3_end}}</td><td>the bias alone evens out a skewed router</td></tr>
+<tr><td>preview, first test (30 steps, switch at 20, bias 0.001)</td><td class="num">MaxVio 1.50, 1 dead</td><td><span class="chip miss">failed</span> the "no dead experts" check; this led to 7.4 (numbers from that run's printout; its summary was overwritten by the rerun)</td></tr>
+<tr><td>preview after the fix ({{cpu_p_steps}} steps, switch at 20, bias 0.01)</td><td class="num">MaxVio {{cpu_p_mv}}, {{cpu_p_dead}} dead</td><td><span class="chip done">passed</span>; clone distance {{cpu_p_cd0}} &rarr; {{cpu_p_cd1}}; loss {{cpu_p_v0}} &rarr; {{cpu_p_v1}}</td></tr>
+</table></div>
+
+<h3 id="m2find">7.4 A finding: the switch to hard selection piles tokens onto one clone <span class="chip done">fixed 29 Sep: D8</span></h3>
+<p>The failed check led to a diagnosis on the laptop's tiny model. The converted MoE was trained for {{diag_steps}} steps under four settings, with two seeds each; probabilistic selection switched to hard selection at step 80. The load was measured every 40 steps. The data is in <code>diagnosis/balance_cpu.json</code>, produced by <code>tools/probe_balance.py</code>.</p>
+<figure>
+<div class="svgscroll">
+<svg viewBox="0 0 700 270" role="img" aria-label="MaxVio over training steps for four settings. All stay near zero until the switch at step 80. With the planned bias step of 0.001 MaxVio jumps above 1 and stays there; with a bias step of 0.01 it spikes to about 0.2 and returns to about 0.07; with a slower router it spikes to about 0.5 and returns; with probabilistic selection throughout it stays near 0.05.">
+<!--BALFIG-->
+</svg></div>
+<figcaption>MaxVio (0 = perfectly even; 1 = the busiest expert has twice its fair share), averaged over layers, families and the two seeds. The dashed line is the switch from probabilistic to hard selection.</figcaption>
+</figure>
+<h4>Why it happens, in plain words</h4>
+<p>At the switch, the 8 clones in each family are still almost the same, so their router scores differ by tiny amounts. Those differences are nearly the same for every token. While selection is probabilistic, that does not matter: each clone keeps getting its share by chance. Once selection becomes "take the highest", almost every token goes to whichever clone is a hair ahead. That is the instructor's "collapse along clone families" (lesson Section 20). The balancing bias is meant to push back, but at 0.001 per step it needs hundreds of steps to overturn even a small lead, so the pile-up lasts.</p>
+<!--BALTABLE-->
+<h4>What each option costs (the full record is <a href="#d8">D8</a>)</h4>
+<div class="tblwrap"><table>
+<tr><th>option</th><th>pros</th><th>cons</th></tr>
+<tr class="hl"><td><b>A. Bias step 0.01</b> instead of 0.001 <span class="rec">recommend</span></td><td>one number; keeps hard selection, so training and evaluation choose the same way; the imbalance settled within about 40 steps on both seeds; loss no worse than the others</td><td>departs from the lesson's 0.001, which is tuned for runs of millions of steps; with a large step the bias jitters, which leaves a small floor (MaxVio about 0.07)</td></tr>
+<tr><td>B. A 10&times; slower router</td><td>similar settling; best loss on one seed</td><td>needs its own learning rate for the router, which means changing the optimiser code in Cell 6; that cell is frozen, and changing it would retrain R1</td></tr>
+<tr><td>C. Probabilistic selection throughout</td><td>perfectly balanced all the way</td><td>worst loss on both seeds, by about 0.07: training picks at random but evaluation picks the best, so the two disagree</td></tr>
+<tr><td>D. Keep the plan (0.001)</td><td>as the lesson says</td><td>MaxVio stays above 1 for 200 steps after the switch; in the tiny preview one expert died</td></tr>
+</table></div>
+<div class="box flag"><span class="lbl">How far to trust this</span><p>These are runs of a 4-layer, 64-wide model on a laptop, two seeds each. The <b>pattern</b> (collapse at the switch; a stronger bias or slower router fixes it; sampling throughout costs loss) is the same on both seeds, and it is the mechanism the lesson describes. The <b>sizes</b> will differ on the real 16 &times; 320 model with 16,384 tokens per step. That is why the preview on the T4 should cross the switch (next point).</p></div>
+<h4>It also changes the preview (revisiting D7)</h4>
+<p>D7 chose a 300-step preview, and D3 puts the switch at step 300. So the preview would end exactly where the problem starts, and it would first show up in R3, in v3. Making the preview <b>450 steps</b> (300 probabilistic, then 150 hard; about 7.4M tokens) lets v2 show the switch and whichever fix we choose, on the real model, before the full runs.</p>
+
+<h3 id="m2run">7.5 What you will run and look for</h3>
+<ol>
+<li>Open <code>session14_moe_v2.ipynb</code> in Colab (T4), Runtime &rarr; Run all. R1 and the data reload from Drive in seconds; v2's own work takes a few minutes.</li>
+<li>Cell 13: the converted model's validation loss before any MoE step should read {{r1_final}}, R1's.</li>
+<li>Cells 14 and 15: the loss should keep falling across the conversion, MaxVio should stay low through the switch, there should be no dead experts, and the clone distance should grow from 0.</li>
+<li>Hand back <code>era5s14_v2_outputs.zip</code> and the executed notebook; the results go into this document as milestone 2.</li>
+</ol>
+<div class="box take"><span class="lbl">Decided 29 Sep</span><p><b>D8:</b> bias step 0.01 (option A). <b>D7 revised:</b> a 450-step preview that crosses the switch. Rationale, pros and cons: <a href="#d8">D8</a> and <a href="#d7r">D7, revised</a>. With both applied, the laptop test passed {{cpu_pass}} (Section 7.3).</p></div>
+
+
+<h2 id="m2t4">8. Milestone 2 on the T4: the conversion is exact, but the MoE did not keep learning</h2>
+<p class="sub" style="margin-bottom:14px">Run on {{v2_date}}, Colab {{gpu}}. {{v2_pass}} checks passed. R1 and the data reloaded from Drive, as designed.</p>
+
+<h3 id="m2t4a">8.1 What held</h3>
+<div class="tblwrap"><table>
+<tr><th>check</th><th class="num">measured on the T4</th><th>reading</th></tr>
+<tr><td>R1 reused, not retrained</td><td class="num">replayed</td><td>the cache design works: v2 started from v1's checkpoint in seconds</td></tr>
+<tr><td>G1 fp64 logits</td><td class="num">{{t4_g1_64}}</td><td>the converted model computes R1's function; only rounding differs</td></tr>
+<tr><td>G1 fp32 logits</td><td class="num">{{t4_g1_32}}</td><td>the rounding floor, as predicted (Section 7.1)</td></tr>
+<tr><td>G1 validation loss</td><td class="num">{{t4_val_moe}} vs {{t4_val_r1}}</td><td>the MoE starts exactly where R1 stopped</td></tr>
+<tr><td>G2 router gradient</td><td class="num">{{t4_g2_joint}} vs {{t4_g2_flawed}}</td><td>ours learns; the flawed per-family rule gives exactly zero</td></tr>
+<tr><td>G4 parameters</td><td class="num">{{t4_total}} total, {{t4_active}} active</td><td>8&times; the FFN parameters stored, the same work per token (plus the routers)</td></tr>
+</table></div>
+
+<h3 id="m2t4b">8.2 What failed</h3>
+<figure>
+<div class="svgscroll">
+<svg viewBox="0 0 700 285" role="img" aria-label="Left: R1's validation loss falling to 4.123 at the conversion, then the MoE preview's loss rising to about 4.17 and ending at 4.16. Right: MaxVio flat near 0.06 until step 300, then rising to about 2; clone distance rising steadily from 0.05 to 0.41.">
+<!--V2FIG-->
+</svg></div>
+<figcaption>Left: validation loss across the conversion (dashed). Right: MaxVio (orange) and clone distance (green) over the 450 preview steps. The dotted line marks the switch from probabilistic to hard selection at step 300.</figcaption>
+</figure>
+<div class="tblwrap"><table>
+<tr><th>measure</th><th class="num">result</th><th>what it means</th></tr>
+<tr><td>validation loss</td><td class="num">{{p_v0}} &rarr; {{p_v1}} &rarr; {{p_v2}} &rarr; {{p_v3}}</td><td><span class="chip miss">failed</span> it rose by {{p_rise}} over 7.4M tokens; R1 had been falling by about {{rate_per_m}} per million tokens</td></tr>
+<tr><td>when the rise started</td><td class="num">train loss {{p_t25}} at step 25, {{p_t300}} at step 300</td><td>during the probabilistic phase, while the load was perfectly even: the switch is <b>not</b> the cause of the rise</td></tr>
+<tr><td>MaxVio</td><td class="num">{{p_mv300}} at step 300 &rarr; {{p_mv450}} at step 450</td><td><span class="chip miss">failed</span> after the switch the load collapsed despite the bias step of 0.01 (D8): the bias moved at full speed ({{p_b300}} &rarr; {{p_b450}}) and still lost</td></tr>
+<tr><td>worst layer</td><td class="num">one clone takes {{p_worst}}% of its family</td><td>layers 2&ndash;7 collapsed hardest; the last layers stayed near even</td></tr>
+<tr><td>dead experts</td><td class="num">{{p_dead}} of 512 at the end</td><td>a clone that gets no tokens stops training</td></tr>
+<tr><td>clone distance</td><td class="num">{{p_cd0}} &rarr; {{p_cd300}} (step 300) &rarr; {{p_cd450}}</td><td>the clones moved apart by a third of their size in 300 steps: fast; whether this is useful specialisation or noise is explanation 1 below</td></tr>
+<tr><td>speed and memory</td><td class="num">{{p_tps}} tok/s; {{p_peak}} MiB</td><td>{{p_slow}}&times; slower than dense ({{r1_tps}}); the 32 small expert products per layer are expensive on a T4</td></tr>
+</table></div>
+<div class="box flag"><span class="lbl">Two predictions missed, stated plainly</span><p><b>D8 did not hold at full size.</b> The bias step of 0.01 kept the laptop's tiny model balanced, but on the real model the router's preference between clones grew much faster than the bias could correct. <b>The laptop test could not see the loss problem at all:</b> its tiny model (loss 5.4) improves under almost any change, while R1 (loss 4.12) is close to what it can learn, so a disruption shows.</p></div>
+
+<h3 id="m2t4c">8.3 Why, as far as the data can tell</h3>
+<p>The two failures have different timing, so they probably have different causes.</p>
+<ul>
+<li><b>The loss rise (steps 0&ndash;300).</b> Three explanations fit, and this run cannot separate them:
+<ol>
+<li><b>Noisy clones.</b> With random selection, each clone trains on a random eighth of the tokens but still takes full-size Adam steps, so the 8 copies wander apart by noise (clone distance 0.35 by step 300). At evaluation each token goes to the clone with the highest score, and that clone has learned from only an eighth of the new data.</li>
+<li><b>A fast router.</b> The router starts fresh with Adam at learning rate 1e-3. Its steps change the four family weights quickly, and those weights are part of the model's function.</li>
+<li><b>No warm-up after conversion.</b> The model was restarted into a new shape at full learning rate.</li>
+</ol></li>
+<li><b>The collapse (after step 300).</b> During the probabilistic phase the router learned strong preferences between clones. Random sampling hid them, because a clone with a high score still did not get every token. Hard selection made them count at once. The router's preferences grew faster than the bias could correct.</li>
+</ul>
+<div class="box note"><span class="lbl">A reference point we do not have yet</span><p>We also do not know what the <b>dense</b> model does on these same tokens. R1 was falling by about {{rate_per_m}} per million tokens, but the new data might be harder or easier. The dense control (R2) answers that. Its first 450 steps are the right baseline for judging any fix.</p></div>
+
+<h2 id="m21">9. Next: find the cause before changing the design (a short diagnostic, v2.1)</h2>
+<p>Changing a setting now would be a guess: three explanations fit the loss rise, and the laptop cannot tell them apart. The proposal is one short diagnostic on the T4. Six runs of 200 steps each (about 3.3M tokens) start from the same conversion point on the same data, and each differs from the others in one thing. Validation is measured every 50 steps. The throwaway checkpoints are deleted after each run to spare your Drive.</p>
+<div class="tblwrap"><table>
+<tr><th>run</th><th>what differs</th><th>question it answers</th></tr>
+<tr><td><b>A. Dense continues</b></td><td>no MoE: R1 simply keeps training (the first 200 steps of R2)</td><td>how fast should the loss fall on this data? The yardstick for everything else</td></tr>
+<tr><td><b>B. MoE, one clone, router frozen</b></td><td>every token always takes clone 1 of each family, and all weights stay 1: mathematically the dense model</td><td>does the MoE code itself change training? B must track A; if not, the harness has a bug</td></tr>
+<tr><td><b>C. MoE, one clone, router learns</b></td><td>as B, but the router can change the four family weights</td><td>explanation 2: does a fast-moving router alone push the loss up?</td></tr>
+<tr><td><b>D. As designed, router 10&times; slower</b></td><td>the v2 design, with the router's output scaled by 0.1 (equivalent to a 10&times; smaller router learning rate under Adam; no change to the frozen cells)</td><td>explanation 2 inside the full design, and whether a slower router also prevents the collapse</td></tr>
+<tr><td><b>E. As designed, with a warm-up</b></td><td>the v2 design, with the learning rate ramped from 0 to 1e-3 over the first 100 steps</td><td>explanation 3: was the restart simply too abrupt?</td></tr>
+<tr><td><b>F. Clones chosen by token, not by chance</b></td><td>each token id always goes to the same clone in each family (a fixed hash, as in DeepSeek-V4's first layers); the router still learns the family weights</td><td>explanation 1: with no randomness and no router choice between clones, each clone learns a fixed eighth of the vocabulary. Does the noise go away? And collapse cannot happen by construction</td></tr>
+</table></div>
+<p>Runs A&ndash;F together take about 20 minutes on the T4 (the dense run is 3&times; faster than the MoE runs). The v2 preview's first 200 steps serve as the "as designed" reference, because it used the same data and settings.</p>
+<div class="box jarg"><span class="lbl">How to read the results</span><ul>
+<li>If <b>B &ne; A</b>: a bug in the MoE code. Fix that first; nothing else is meaningful until it is.</li>
+<li>If <b>C</b> rises like the preview: the router is the problem, and D should fix it.</li>
+<li>If <b>C</b> tracks A but <b>F</b> is much better than the preview: the random clone choice is the problem, and a deterministic assignment (or starting with fewer clones) is the fix.</li>
+<li>If <b>E</b> is much better: the restart was too abrupt, and R3 gets a short warm-up.</li>
+<li>If nothing beats A: at this scale and budget, splitting the FFN into clones costs more than the extra parameters give back. That is also a valid finding for the assignment.</li>
+</ul></div>
+<div class="box take"><span class="lbl">Decided 29 Sep</span><p>Build the diagnostic ("lets build").</p></div>
+
+<h3 id="m21b">9.1 What was built (v2.1) <span class="chip ready">ready to run</span></h3>
+<p>One new cell, <b>Cell 16</b>, before the bundle cell. It does not touch Cells 5&ndash;14, so R1 and the v2 preview reload from Drive. Two changes from the proposal above, both needed to make a 200-step run informative:</p>
+<ul>
+<li><b>The switch comes at step 100, not 300,</b> in the runs that use the v2 design (D, E). With the switch at 300, a 200-step run would never reach it and could not show the collapse.</li>
+<li><b>A seventh run, G: the v2 design with the switch at step 100.</b> D and E are compared against G, so each differs from its reference in exactly one thing. The v2 preview cannot serve as that reference, because its switch was at 300.</li>
+</ul>
+<div class="tblwrap"><table>
+<tr><th>run</th><th>built as</th><th>balance loss and bias</th></tr>
+<tr><td>A</td><td>the dense model from R1's checkpoint (weights, Adam state, scaler), 200 steps on the continuation data</td><td>n/a</td></tr>
+<tr><td>B</td><td>the converted MoE; every token takes clone 1 of each family; router frozen at zero, so every weight is exactly 1</td><td>none (nothing to balance)</td></tr>
+<tr><td>C</td><td>as B, router learning</td><td>none</td></tr>
+<tr><td>G</td><td>the v2 design; probabilistic selection for 100 steps, then hard</td><td>as v2: bias step 0.01, sequence loss 0.0001</td></tr>
+<tr><td>D</td><td>as G, router output multiplied by 0.1 (starts at zero, so the start is still exact)</td><td>as v2</td></tr>
+<tr><td>E</td><td>as G, learning rate ramped 0 &rarr; 1e-3 over the first 100 steps</td><td>as v2</td></tr>
+<tr><td>F</td><td>a fixed table sends each token id to one clone per family. The table is built from token counts in the first 20M training tokens, frequent tokens first, each to the clone with the least traffic so far, so every clone gets about an eighth of the token occurrences. The router learns only the family weights.</td><td>none (balanced by construction)</td></tr>
+</table></div>
+<p>Each run is 200 steps (about 3.3M tokens), with validation every 50 steps on the usual 327,680 held-out tokens. A finished run is cached as a small log file, so a disconnect does not repeat it. Its large checkpoints (up to 1.4 GB) are deleted right after it finishes.</p>
+<div class="box take"><span class="lbl">Laptop test, 29 Sep (tiny model, not the experiment)</span><p>All seven runs completed, and the notebook passed 17/17. The gate that matters held exactly: <b>B, the dense model in MoE clothing, gave the same validation loss as A at every step</b> (5.3655 vs 5.3655). So the MoE code itself does not change training. A rerun reloaded all seven runs from the cache. The tiny model's differences between the other runs are too small to read. As in v2, it cannot show the problem; only the T4 can.</p></div>
+
+<h3 id="m21c">9.2 How to run it, and what to look for</h3>
+<ol>
+<li>Open <code>session14_moe_v2.1.ipynb</code> in Colab (T4), Runtime &rarr; Run all, and allow the Drive mount with the same account. Expect about 25 minutes: the dense run A is about 1 minute, and each MoE run about 3&ndash;4.</li>
+<li>The final line will read <b>V2.1: 15/17</b>. The two failing checks are v2's preview, replayed from Drive, and the notebook says so. The new check, "B tracks A", must pass.</li>
+<li>Cell 16 prints a table: validation loss at steps 0, 50, 100, 150, 200 for each run, its difference from A at the end, MaxVio, dead experts and speed. Then comes the figure <code>v21_diagnostic.png</code>.</li>
+<li>Hand back <code>era5s14_v2.1_outputs.zip</code> and the executed notebook. We read the table together using "How to read the results" above, then choose the design for v3.</li>
+</ol>
+
+
+<h2 id="m21t4">10. Milestone 2.1 on the T4: what the diagnostic found</h2>
+<p class="sub" style="margin-bottom:14px">Run on {{d_date}}, Colab {{gpu}}. The diagnostic gate passed: B tracked A ({{d_B}} vs {{d_A}}). 16/17 checks overall. The one failure is v2's preview check, which fails again (below).</p>
+
+<div class="box flag"><span class="lbl">First, an accident: the Drive mount failed</span><p>Cell 6 printed "DRIVE MOUNT FAILED (ValueError)", so the notebook fell back to the runtime's temporary disk, which starts empty. It therefore <b>rebuilt the data, retrained R1 and reran the preview</b>, instead of reloading them. This did not spoil the diagnostic: all seven runs started from the same freshly trained R1, so they are fair against each other. The accident even gave two useful facts:</p>
+<ul>
+<li><b>R1 is reproducible to {{r1_repeat}}.</b> The same seed on the same GPU gave {{r1b_final}} instead of {{r1_final}}. Differences in the GPU's arithmetic order make runs slightly non-deterministic. This is our <b>run-to-run noise floor</b>: differences smaller than about 0.002 mean nothing.</li>
+<li><b>The v2 problem repeated on an independent R1:</b> the preview's loss rose again, by {{p2_rise}} (v2: {{p_rise}}). It is a real effect, not a one-off.</li>
+</ul>
+<p>The new R1 was lost with the runtime. Your Drive still holds the original R1 ({{r1_final}}). The mount must work for v3; see <a href="#m22">Section 11</a>.</p></div>
+
+<figure>
+<div class="svgscroll">
+<svg viewBox="0 0 700 300" role="img" aria-label="Validation loss over 200 steps for seven runs. A and B fall together; C follows them until step 150; G, D and F rise; E dips sharply during its warm-up, then rises. Right panel: MaxVio stays low for D and F and shoots up after the switch for G and E.">
+<!--D21FIG-->
+</svg></div>
+<figcaption>Left: validation loss over the 200 steps after conversion. Right: MaxVio for the runs that choose between clones (B and C use one clone by design). The dotted line is the switch to hard selection at step 100 (G, D, E).</figcaption>
+</figure>
+<!--D21TABLE-->
+
+<h3 id="m21t4a">10.1 What each question got as an answer</h3>
+<div class="tblwrap"><table>
+<tr><th>question</th><th>answer</th><th>evidence</th></tr>
+<tr><td>does the MoE code itself change training?</td><td><span class="chip done">no</span></td><td>B, the dense model in MoE clothing, ended {{d_gap_B}} from A: at the noise floor</td></tr>
+<tr><td>does a moving router alone push the loss up?</td><td><span class="chip ready">mostly no</span></td><td>C tracked A to step 150 ({{d_C150}} vs {{d_A150}}) and ended {{d_gap_C}} above it, in one measurement: a small, late effect, far from the {{d_gap_G}} of the design</td></tr>
+<tr><td>what causes the collapse after the switch?</td><td><span class="chip done">the router is too fast</span></td><td>with the router 10&times; slower (D), MaxVio stayed at {{d_mv_D}} after the switch with no dead experts; the design (G) reached {{d_mv_G}} with {{d_dead_G}} dead</td></tr>
+<tr><td>is the random clone choice the cause of the loss rise?</td><td><span class="chip miss">no</span></td><td>F has no randomness and no router choice between clones, and it is perfectly balanced (MaxVio {{d_mv_F}}); it still rose, and rose the most early on ({{d_F50}} at step 50)</td></tr>
+<tr><td>was the restart too abrupt?</td><td><span class="chip wait">partly, see below</span></td><td>E, with the learning rate ramping up, fell to <b>{{d_E50}}</b> at step 50, far <b>below</b> A ({{d_A50}}), then rose as the learning rate reached 1e-3, ending at {{d_E200}}</td></tr>
+</table></div>
+
+<h3 id="m21t4b">10.2 The new leading explanation: the experts' learning rate is too high for their share of the data</h3>
+<p>The loss rises whenever tokens are <b>split</b> between the clones, and in no other case. It rises in G, D, E (after its warm-up) and F, but not in B or C, where one clone takes every token. So the cause is not how the clones are chosen: it is that they are split.</p>
+<div class="box jarg"><span class="lbl">Why splitting could hurt, in plain words</span><p>Before conversion, each FFN slice learned from all 16,384 tokens of every batch. After conversion, each clone learns from about a <b>2,000-token</b> share. Its gradient is a much noisier estimate of where to go. Adam, however, scales every step to about the same size (the learning rate), whatever the noise. So each clone takes full-size steps in noisier directions, and the eight copies wander apart. F's clones were already {{d_cd_F25}} of their size apart after only 25 steps. A smaller learning rate for the experts would shrink the noisy steps. That is exactly what E did by accident in its first 50 steps, when the learning rate was still low.</p></div>
+<div class="box flag"><span class="lbl">Why this is still a hypothesis</span><p>Part of E's dip may be the ordinary effect of a lower learning rate, which lowers the loss of <b>any</b> model quickly (the "decay" effect that WSD relies on). A dense model given the same warm-up would show how much of the dip is that. Also, every run here is a single seed, 200 steps long. The gaps between the design runs and A ({{d_gap_lo}}&ndash;{{d_gap_hi}}) are {{d_x_lo}}&ndash;{{d_x_hi}}&times; the noise floor, so they are real. The smaller differences between G, D and F are not reliable.</p></div>
+
+<h2 id="m22">11. Next: test the experts' learning rate (a second diagnostic, v2.2)</h2>
+<p>The first diagnostic narrowed three explanations to one new one. The next round tests it directly, and on the design that already fixes the collapse. How to give the experts a smaller learning rate without touching the frozen Cell 6: store each expert's weights divided by a constant <i>c</i>, and multiply by <i>c</i> in the forward pass. Under Adam this is the same as multiplying the experts' learning rate by <i>c</i>, and the model's function does not change. The copied Adam state is rescaled to match, so the start stays exact.</p>
+<div class="tblwrap"><table>
+<tr><th>run</th><th>what it is</th><th>question</th></tr>
+<tr><td><b>A</b></td><td>dense continues (again, since the first run's results were not saved to Drive)</td><td>the yardstick</td></tr>
+<tr><td><b>Aw</b></td><td>dense continues, with E's warm-up (0 &rarr; 1e-3 over 100 steps)</td><td>how much of E's dip is just a lower learning rate?</td></tr>
+<tr><td><b>D</b></td><td>the design with the 10&times; slower router (it fixed the collapse)</td><td>the reference for the next two runs</td></tr>
+<tr><td><b>D35</b></td><td>as D, experts' learning rate &times; 0.35 (1/&radic;8: the usual scaling for a batch 8&times; smaller)</td><td>does a smaller expert step stop the loss rise?</td></tr>
+<tr><td><b>D12</b></td><td>as D, experts' learning rate &times; 0.125 (1/8)</td><td>is an even smaller step better, or too slow to learn?</td></tr>
+<tr><td><b>F35</b></td><td>token-id routing (F), experts' learning rate &times; 0.35</td><td>the same fix on the design that is balanced by construction</td></tr>
+</table></div>
+<p>Each run is 200 steps again, about 20 minutes in total. The dense runs take about 1 minute each, the MoE runs 3&ndash;4.</p>
+<div class="box jarg"><span class="lbl">How to read it</span><ul>
+<li>If <b>D35 or D12 track or beat A</b>: the hypothesis holds. v3's R3 uses D plus that expert learning rate, and the assignment can show the MoE continuing to learn.</li>
+<li>If <b>Aw dips as much as E did</b>: E's dip was the learning rate, not the MoE. That changes nothing above, but it keeps the write-up honest.</li>
+<li>If <b>none of them</b> stop the rise: the split itself costs more than 200 steps can repay. The honest next step would then be a longer run (v3) with the best of these, reporting whether and when the MoE catches up.</li>
+</ul></div>
+<div class="box flag"><span class="lbl">Before running anything: the Drive mount</span><p>v2.1's Drive mount failed with a ValueError. When Colab asks to connect Google Drive, allow it with the same account as before. If it fails again: Runtime &rarr; Disconnect and delete runtime, then Run all. The original R1 (4.1230) is still on your Drive and will be reloaded.</p></div>
+<div class="box take"><span class="lbl">Decided 29 Sep</span><p>Build v2.2 with the six runs.</p></div>
+
+<h3 id="m22b">11.1 What was built (v2.2) <span class="chip ready">ready to run</span></h3>
+<ul>
+<li><b>Cell 17</b> is new. It adds the six runs, a table and the figure <code>v22_diagnostic.png</code>, and it prints which MoE run came closest to dense and by how much.</li>
+<li><b>The smaller expert learning rate</b> comes from <code>ScaledDiagMoE</code>, a subclass used only here. It stores each expert as w / c and uses c &times; (w / c). A new check confirms the model computes the same thing: on the laptop the largest relative logit difference was 3.2e-7, which is fp32 rounding.</li>
+<li><b>v2.1's seven runs are switched off</b> (<code>RUN_V21 = False</code> in Cell 16). Their results are in Section 10, and their cache was lost with the failed Drive mount, so leaving them on would add about 20 minutes. Set it to True to rerun them.</li>
+<li>Run A is repeated, since every comparison needs its yardstick from the same R1.</li>
+</ul>
+<div class="box take"><span class="lbl">Laptop test, 29 Sep (tiny model, not the experiment)</span><p>17/17 checks passed; all six runs completed and a rerun reloaded them from the cache. On the tiny model the smaller expert learning rates ended <b>below</b> dense after 40 steps: D12 by 0.0055 and F35 by 0.0124, while D was 0.0168 above. That is encouraging, but it is the same tiny model that could not show the problem in v2. Only the T4 run counts.</p></div>
+
+<h3 id="m22c">11.2 How to run it</h3>
+<ol>
+<li>Open <code>session14_moe_v2.2.ipynb</code> in Colab (T4), Runtime &rarr; Run all. <b>Allow the Drive mount</b> with the same account as v1, and check that Cell 6 prints <code>drive mounted: True</code>. If it prints DRIVE MOUNT FAILED: Runtime &rarr; Disconnect and delete runtime, then Run all again. With Drive working, R1 (4.1230) and the v2 preview reload in seconds.</li>
+<li>Expect about 20 minutes (the two dense runs take about 1 minute each, the four MoE runs 3&ndash;4 each).</li>
+<li>The last line should read <b>V2.2: 15/16</b> with Drive working. The one failure is v2's preview, replayed, as before.</li>
+<li>Hand back <code>era5s14_v2.2_outputs.zip</code> and the executed notebook. If D35, D12 or F35 keeps pace with dense, that becomes R3's setting, and v3 (the full comparison) is next.</li>
+</ol>
+
+
+<h2 id="m22t4">12. Milestone 2.2 on the T4: a smaller expert learning rate turns the MoE around</h2>
+<p class="sub" style="margin-bottom:14px">Run on {{e_date}}, Colab {{gpu}}. 15/17 checks; the two failures are v2's preview checks, rerun (below). The new exactness check passed: storing the experts as w / c changed the logits by at most {{e_exact}} (fp32 rounding).</p>
+
+<div class="box flag"><span class="lbl">The Drive mount failed again</span><p>As in v2.1, Cell 6 printed "DRIVE MOUNT FAILED (ValueError)", so the data was rebuilt, R1 retrained and the preview rerun. The runs are still fair against each other (all from the same new R1). They add two more data points:</p>
+<ul>
+<li><b>Three R1s so far:</b> {{r1_final}}, {{r1b_final}}, {{r1c_final}}. The spread, {{r1_spread}}, is the run-to-run noise floor.</li>
+<li><b>The preview's rise happened a third time:</b> {{p3_rise}}. The v2 design's problem is thoroughly reproduced.</li>
+</ul>
+<p>For v3's long runs, Drive has to work (<a href="#v3drive">Section 13.2</a>).</p></div>
+
+<figure>
+<div class="svgscroll">
+<svg viewBox="0 0 700 300" role="img" aria-label="Validation loss over 200 steps. Dense A falls steadily from 4.124 to 4.097. Dense with warm-up dips to 4.050 at step 50 then returns to about 4.10. The design D rises to about 4.17. D35, D12 and F35 all fall below dense: D12 to about 4.06, D35 to about 4.08, F35 steadily to about 4.085.">
+<!--D22FIG-->
+</svg></div>
+<figcaption>Validation loss over the 200 steps after conversion. Dashed: dense with a warm-up (Aw). The dotted line is the switch to hard selection (step 100) for D, D35 and D12.</figcaption>
+</figure>
+<!--D22TABLE-->
+
+<h3 id="m22t4a">12.1 What it answered</h3>
+<div class="tblwrap"><table>
+<tr><th>question</th><th>answer</th><th>evidence</th></tr>
+<tr><td>is the experts' learning rate the cause of the loss rise?</td><td><span class="chip done">yes</span></td><td>the same design with the experts at 0.35&times; and 0.125&times; went from {{e_gap_D}} behind dense to {{e_gap_D35}} and {{e_gap_D12}}: <b>ahead</b> of it. Nothing else changed.</td></tr>
+<tr><td>does the fix keep the load even?</td><td><span class="chip done">yes</span></td><td>MaxVio after the switch: {{e_mv_D35}} (D35), {{e_mv_D12}} (D12), {{e_mv_F35}} (F35); no dead experts in any run</td></tr>
+<tr><td>was v2.1's dip in run E just the lower learning rate?</td><td><span class="chip done">yes</span></td><td>the <b>dense</b> model with the same warm-up (Aw) dipped by {{e_aw_dip}} at step 50, more than E's {{e_e_dip}}, and gave it back once the learning rate reached 1e-3</td></tr>
+<tr><td>is the MoE still learning at the end?</td><td><span class="chip wait">mixed</span></td><td>over steps 150&ndash;200, dense moved {{e_sl_A}}, F35 {{e_sl_F35}}, D35 {{e_sl_D35}}, D12 {{e_sl_D12}}. D12 leads but has stopped falling for now; F35 is still falling</td></tr>
+</table></div>
+
+<h3 id="m22t4b">12.2 What the result means, and what it does not prove yet</h3>
+<div class="box take"><span class="lbl">What it means</span><p>The converted MoE <b>can</b> keep learning, and faster than the dense model, once each expert's steps are sized for the smaller share of data it sees. That is the assignment's requirement met on the real model, in a short run.</p></div>
+<div class="box flag"><span class="lbl">Three honest limits</span><ul>
+<li><b>Part of the lead may be "a lower learning rate", not "more capacity".</b> Aw shows that simply lowering the learning rate gives any model a quick drop. The experts are 58% of the weights, and D12 slows exactly those. A <b>dense</b> model with its FFN slowed the same way (0.125&times;) is the fair control. Without it we cannot say the MoE's extra parameters are what helped.</li>
+<li><b>D12 and D35 flattened after about step 100</b>, while dense kept falling. If that continues, dense may catch up in a few hundred steps. F35 kept falling. Only a long run shows which holds.</li>
+<li><b>One seed, 200 steps.</b> The leads ({{e_lead_lo}}&ndash;{{e_lead_hi}}) are {{e_x_lo}}&ndash;{{e_x_hi}}&times; the noise floor, so they are real at step 200. Their future is not measured.</li>
+</ul></div>
+
+<h2 id="v3plan">13. Next: v3, the full comparison — and the decisions it needs</h2>
+<p>v3 does what the plan always intended: long runs of 50M tokens from R1's checkpoint, each with the learning rate decaying in its last 20%. It now uses the settings the diagnostics found. The runs:</p>
+<div class="tblwrap"><table>
+<tr><th>run</th><th>what it is</th><th class="num">time on a T4</th><th>why</th></tr>
+<tr><td><b>R2</b></td><td>dense continues (the control)</td><td class="num">about 15 min</td><td>the yardstick, as planned</td></tr>
+<tr class="hl"><td><b>R2s</b> (new)</td><td>dense continues with its FFN at the same slowed learning rate as the MoE's experts</td><td class="num">about 15 min</td><td>the fair control: if R3 beats R2s, the MoE's extra parameters helped, not just the slower learning rate</td></tr>
+<tr class="hl"><td><b>R3</b></td><td>the MoE: router 10&times; slower, experts at the chosen learning rate, switch to hard selection at step 100</td><td class="num">about 50 min</td><td>the assignment's answer</td></tr>
+</table></div>
+
+<h3 id="v3q">13.1 Decisions</h3>
+<div class="tblwrap"><table>
+<tr><th>decision</th><th>options</th><th>recommendation and why</th></tr>
+<tr><td><b>V3-1. Which MoE setting for R3?</b></td><td>D12 (experts 0.125&times;, learned routing); D35 (0.35&times;); F35 (token-id routing, 0.35&times;); or two MoE runs (+50 min each)</td><td><b>D12</b>: the best at 200 steps (&minus;0.033), with a learned router, which is the lesson's core mechanism. The risk is that it flattened after step 100. F35 kept falling, but its routing is a fixed table, so it demonstrates less of the lesson. If time allows, D12 and F35 as R3 and R3b.</td></tr>
+<tr><td><b>V3-2. Add the fair control R2s?</b></td><td>yes (+15 min) / no</td><td><b>Yes.</b> It is the only way to say the MoE helped because of its extra capacity. Without it, the claim would be "the MoE with slower experts beat the dense model with faster ones".</td></tr>
+<tr><td><b>V3-3. When to switch to hard selection?</b></td><td>step 100 (as tested) / step 300 (the original D3)</td><td><b>Step 100</b>: it is the setting the diagnostics measured with the slow router: MaxVio peaked at {{e_mv_D12}} after the switch and settled lower, with no dead experts. Step 300 is untested with the fix.</td></tr>
+<tr><td><b>V3-4. Rerun the v2 preview and diagnostics in v3?</b></td><td>skip (their results are in this document) / rerun</td><td><b>Skip.</b> They took about 45 minutes on each of the last two runs because Drive was not mounted.</td></tr>
+</table></div>
+
+<h3 id="v3drive">13.2 The Drive mount has to work</h3>
+<p>v2.1 and v2.2 both failed to mount Drive with a ValueError. The notebook printed only the error's type, not its message, so the exact cause is unknown. Common causes are closing or timing out the Google sign-in pop-up, signing in with a different account, or a runtime that already had a half-mounted <code>/content/drive</code>. For v3 the notebook will:</p>
+<ul>
+<li>print the full error message;</li>
+<li>retry once with a forced remount;</li>
+<li><b>stop before the long runs</b> if Drive is still not mounted. Without Drive, a disconnect in the 80-minute run would lose everything. A setting at the top lets you override this if you accept the risk.</li>
+</ul>
+<div class="box take"><span class="lbl">Decided 29 Sep: all as recommended</span><p><b>V3-1:</b> D12 (router 10&times; slower, experts at 1/8 speed). <b>V3-2:</b> add the fair control R2s. <b>V3-3:</b> switch to hard selection at step 100. <b>V3-4:</b> skip the reruns.</p></div>
+
+<h3 id="v3built">13.3 What was built (v3) <span class="chip ready">ready to run</span></h3>
+<div class="tblwrap"><table>
+<tr><th>cell</th><th>what it does</th></tr>
+<tr><td>3 storage</td><td>mounts Drive, prints the full error if it fails, retries once with a forced remount, and <b>stops</b> if Drive is still not mounted (<code>REQUIRE_DRIVE = True</code>)</td></tr>
+<tr><td>14, 16, 17</td><td>the v2 preview and both diagnostics are switched off (<code>RUN_PREVIEW</code>, <code>RUN_V21</code>, <code>RUN_V22</code> = False); their results are in Sections 8, 10 and 12</td></tr>
+<tr><td>18 the long runs</td><td>R2, R2s and R3: 3,051 steps each (50M tokens) from R1's checkpoint, on the same new tokens, with the learning rate lowered over the last 610 steps. R2s and R3 use the "store as w / 8, use as 8 &times;" trick for their FFN/experts; a check confirms R2s starts exactly as R1. Each run is saved to Drive when it finishes, and a disconnect resumes from its last 8-minute checkpoint.</td></tr>
+<tr><td>19 the answer</td><td>checks <b>G5</b> (the MoE's loss ends below its value at conversion by more than the noise floor), prints R3 against R2 and against R2s with a verdict and a conclusion chosen from the numbers, and saves three figures (loss across the conversion; R3's balance over time; the final load per expert) and text samples from R2 and R3</td></tr>
+<tr><td>20 checks and bundle</td><td>every check that ran, <code>summary.json</code>, <code>RESULTS.md</code>, <code>era5s14_v3_outputs.zip</code></td></tr>
+</table></div>
+<div class="box take"><span class="lbl">Laptop test, 29 Sep (tiny model, not the experiment)</span><p>17/17 checks passed and a rerun reloaded all three runs from the cache. The whole chain works: R2s starts exactly as R1, R3 starts at R1's loss, G5 passes, and the verdict and conclusion print from the measured numbers. The tiny model's actual losses mean nothing for the real run.</p></div>
+
+<h3 id="v3run">13.4 How to run it</h3>
+<ol>
+<li>Open <code>session14_moe_v3.ipynb</code> in Colab. Runtime &rarr; Change runtime type &rarr; <b>T4 GPU</b>.</li>
+<li>Runtime &rarr; Run all. When Google asks to connect Drive, choose the <b>same account as v1</b> and allow access. Cell 3 must print <code>drive mounted: True</code>. If it stops with "Drive is not mounted": Runtime &rarr; Disconnect and delete runtime, then Run all again.</li>
+<li>With Drive working, the data and R1 (4.1230) reload in seconds. Then R2 (about 15 min), R2s (about 15 min) and R3 (about 50 min) run. Keep the tab open; if Colab disconnects, Run all again and each run continues from its last checkpoint.</li>
+<li>The last line should read <b>V3: 17/17 passed</b>. Hand back <code>era5s14_v3_outputs.zip</code> and the executed notebook.</li>
+</ol>
+
+
+<h2 id="m3">14. Milestone 3 (v3): the full comparison — the result</h2>
+<p class="sub" style="margin-bottom:14px">Run on {{f_date}}, Colab {{gpu}}, Drive mounted. {{f_pass}} checks passed. Colab disconnected once during R3, and it resumed from its step-{{f_resume}} checkpoint, as designed.</p>
+
+<div class="box take"><span class="lbl">The assignment's answer</span><p><b>Yes: the converted MoE kept training and kept reducing its loss.</b> Its validation loss went from {{f_conv}} at the conversion to {{f_R3}} after 50M more tokens ({{f_d_R3}}), with no dead experts at any point (gate G5). The conversion itself was exact (Section 8.1).</p></div>
+
+<figure>
+<div class="svgscroll">
+<svg viewBox="0 0 700 300" role="img" aria-label="Validation loss from R1's last 20M tokens through 50M more tokens for R2 dense, R2s dense with a slowed FFN, and R3 MoE. R3 and R2s drop quickly at first; R3 stays below R2 until the decay phase, where R2 falls fastest and finishes lowest.">
+<!--V3FIG-->
+</svg></div>
+<figcaption>Validation loss across the conversion (dashed) and the 50M tokens after it. Shaded: the learning-rate decay (last 20%). R2s is dashed.</figcaption>
+</figure>
+<!--V3TABLE-->
+
+<h3 id="m3a">14.1 Did the MoE help? Three phases</h3>
+<figure>
+<div class="svgscroll">
+<svg viewBox="0 0 700 260" role="img" aria-label="The MoE's lead over time. Against dense R2 it is ahead by 0.03 to 0.05 early, shrinking, then behind after the decay starts. Against R2s it starts level and grows steadily ahead to 0.034 at the end.">
+<!--V3DIFF-->
+</svg></div>
+<figcaption>R3's validation loss minus each control's, at each evaluation. Below zero means the MoE is ahead. The grey band is the noise floor (&plusmn;{{noise}}); shaded: the learning-rate decay.</figcaption>
+</figure>
+<div class="tblwrap"><table>
+<tr><th>phase</th><th>what happened</th><th>what it means</th></tr>
+<tr><td><b>1. Tokens 0&ndash;15M</b></td><td>R3 was {{f_p1_r2}} ahead of R2 at 10M tokens, but R2s was just as far ahead (R3 &minus; R2s: {{f_p1_r2s}})</td><td>this early lead is the <b>slower FFN learning</b>, not the MoE: the dense model given the same slowed FFN got it too</td></tr>
+<tr><td><b>2. Tokens 15M&ndash;40M</b></td><td>R3 pulled steadily away from R2s, from level to {{f_p2_r2s}} ahead at {{f_p2_tok}}M, and was still {{f_p2_r2}} ahead of R2</td><td>the <b>extra stored parameters paying off</b>: same work per token, eight times the FFN weights, and a lead that grew as training went on</td></tr>
+<tr><td><b>3. The decay (last 20%)</b></td><td>R2 fell {{f_dec_R2}}, R3 only {{f_dec_R3}}; R3 lost its lead after {{f_lead_end}}M tokens and finished {{f_gap_R2_abs}} behind R2, while its lead over R2s kept growing to {{f_gap_R2s_abs}}</td><td>the decay helped plain dense much more than the MoE (see 14.2)</td></tr>
+</table></div>
+
+<h3 id="m3b">14.2 Why the decay favoured the dense model (an explanation, not yet tested)</h3>
+<p>Lowering the learning rate at the end of a run gives a quick drop in loss: the steps shrink, so the model settles into a lower point instead of bouncing around it. R2's FFN was learning at full speed, so the decay turned a large step into a small one. R3's experts had been learning at <b>1/8 speed for the whole run</b>, so they were already taking small steps. The decay took them down to 1/80 of the base rate, and there was less "bounce" left to remove. R2s, which has the same slowed FFN, also gained less from the decay ({{f_dec_R2s}}). That fits the explanation, but it is inference from three runs, not a measured cause.</p>
+<div class="box jarg"><span class="lbl">What this suggests trying next (not done here)</span><ul>
+<li><b>Relax the experts' slowdown over time.</b> Start the experts at 1/8 speed, when they have just been split and each sees only an eighth of the tokens, then raise them towards full speed as the clones specialise. The clone distance grew steadily ({{f_cd}} by the end), so they do become different.</li>
+<li><b>A longer run.</b> Phase 2's lead over R2s was still growing when the decay began. A longer stable phase may let the MoE carry a bigger lead into the decay.</li>
+<li><b>A faster expert kernel.</b> The 32 small matrix products per layer made R3 {{f_slow}}&times; slower than dense. A grouped kernel (the lesson's Section 16) would close much of that gap.</li>
+</ul></div>
+
+<h3 id="m3c">14.3 Balance, speed and memory</h3>
+<div class="tblwrap"><table>
+<tr><th>measure</th><th class="num">R3</th><th>reading</th></tr>
+<tr><td>dead experts, any 25-step window</td><td class="num">{{f_dead}}</td><td>all 512 experts trained for the whole run: the slow router kept the collapse away (v2.1's fix)</td></tr>
+<tr><td>MaxVio after the switch</td><td class="num">at most {{f_mv_max}}; {{f_mv_end}} at the end</td><td>close to even throughout, and more even as training went on</td></tr>
+<tr><td>clone distance</td><td class="num">{{f_cd0}} &rarr; {{f_cd}}</td><td>the 8 copies in each family grew steadily apart: they specialised</td></tr>
+<tr><td>speed</td><td class="num">{{f_tps_R3}} tok/s ({{f_slow}}&times; slower than R2)</td><td>same arithmetic per token, but 32 small products per layer instead of 2 large ones, and routing overhead</td></tr>
+<tr><td>peak memory</td><td class="num">{{f_mem_R3}} MiB (R2: {{f_mem_R2}})</td><td>the 114.4M stored parameters and their Adam state: memory follows the total, compute follows the active size (lesson Section 6)</td></tr>
+</table></div>
+<div class="box flag"><span class="lbl">A correction to the notebook's printout</span><p>The executed notebook printed "MaxVio 0.214 at the end". That number came from a final measurement window only <b>one step</b> long (step 3,051, right after the step-3,050 window), so it is noise. Measured over the last full 25-step window it is {{f_mv_end}}. The notebook's one-line conclusion also named only the favourable comparison. Both are fixed in <code>notebook_src.py</code> (Cell 19), and a rerun reprints them in minutes, since every run is cached on Drive. The numbers on this page are computed from the saved logs, with short windows excluded.</p></div>
+
+<h3 id="m3d">14.4 The same three prompts, from R2 and R3</h3>
+<!--V3SAMPLES-->
+<p>Both models are far past R1's fragments of phrases. They write whole sentences that stay on a topic for a while. The differences between the two are anecdotes from single samples; the loss numbers above are the measurement.</p>
+
+<h3 id="m3e">14.5 Limits</h3>
+<ul>
+<li><b>One seed per run.</b> The three R1s spread by {{r1_spread}}, so the final gaps ({{f_gap_R2}} to R2, {{f_gap_R2s}} to R2s) are about {{f_x_r2}}&times; and {{f_x_r2s}}&times; that noise floor. They are clear, but a second seed would make them firm.</li>
+<li><b>One model size and one budget</b> (22.5M dense, 50M + 50M tokens). The lesson's MoE benefits are measured at far larger scales.</li>
+<li><b>The decay explanation (14.2) is inference.</b> The run that would test it, with the experts' slowdown relaxed over time, was not done.</li>
+</ul>
+
+<!-- ============================================================ REFERENCE -->
+<div class="parthead">Reference</div>
+
+<h2 id="repo">15. Files</h2>
+<pre>session 14/assignment/
+  notebook_src.py                    the source of truth (percent-format script)
+  notebooks/                         every version's notebook (v1, v2, v2.1, v2.2, v3),
+                                     as handed over and as run on the T4 (_executed)
+  outputs/                           each version's zip, unpacked in outputs/v1 ... outputs/v3/
+  tools/                             py2ipynb.py, build_plan.py (this page), make_readme.py,
+                                     make_results.py, make_walkthrough.py, probe_balance.py
+  diagnosis/balance_cpu.json         the laptop balance diagnosis (decision D8)
+  plan_src.html                      this page's source
+  assignment_plan.html               this page
+  session14_results.html             the results report
+  session14_walkthrough.html         the notebook walkthrough
+  README.md                          the write-up, with links to every asset
+  docs/                              local copies of the four reports</pre>
+<p>The loop: I build and test on the laptop CPU; you run it on Colab (Runtime &rarr; Run all); you hand back the outputs zip and the executed notebook; the results are written into this page.</p>
+
+<h2 id="log">16. Build log</h2>
+<ul>
+<li><b>27 Sep:</b> session report published. Decided: dense-continue control; budget like session 13.</li>
+<li><b>28 Sep:</b> plan started. Found on paper the "router never learns" flaw in per-family rescaling, and fixed it by rescaling the four chosen weights together (<a href="#conv">Section 4</a>).</li>
+<li><b>28 Sep:</b> decided E (fine-grained, grouped), grouping kept for the whole run, probabilistic selection for the first ~300 steps, no side run; the repo is yours.</li>
+<li><b>28 Sep:</b> decided to deliver in three versions. Built v1; laptop test passed 5/5, and a rerun replayed R1 from the cache instead of retraining.</li>
+<li><b>29 Sep:</b> v1 ran on the Colab T4: {{v1_pass}} checks, {{wall_min}} min end to end. R1 validation {{r1_val0}} &rarr; {{r1_final}} at {{r1_tps}} tokens/s. Two predictions missed: data preparation was faster, and the final loss was lower than expected (<a href="#m1d">Section 6.4</a>).</li>
+<li><b>29 Sep:</b> the plan and the execution record merged into this one document. A laptop test showed the conversion cannot be bit-exact in fp32 (rounding order), so gate G1 moved to fp64 (<a href="#m2fix">Section 7.1</a>). A new decision, the optimiser state at conversion, is waiting for you (<a href="#m2q">Section 7.2</a>).</li>
+<li><b>29 Sep:</b> decided D6 (copy the optimiser moments into the experts; the router starts fresh) and D7 (a 300-step preview in v2), both as recommended. Building v2.</li>
+<li><b>29 Sep:</b> built v2 (Cells 10&ndash;16). Laptop test: {{cpu_pass}}; G1 fp64 {{cpu_g1_64}}, G2 flawed rule exactly 0, G3 MaxVio {{cpu_g3_start}} &rarr; {{cpu_g3_end}}. The failed check (a dead expert in the preview) was traced to the switch from probabilistic to hard selection; four fixes measured on two seeds (<a href="#m2find">Section 7.4</a>). New decision D8 and a revisit of D7 are waiting for you.</li>
+<li><b>29 Sep:</b> decided D8 (bias step 0.01) and D7 revised (450-step preview), both as recommended; rationale, pros and cons in Section 3. Laptop retest with both: {{cpu_pass}}, no dead experts after the switch. v2 handed over.</li>
+<li><b>29 Sep:</b> v2 ran on the T4: {{v2_pass}}. Conversion exact (G1 fp64 {{t4_g1_64}}; validation {{t4_val_moe}} vs R1 {{t4_val_r1}}). But the preview's validation loss rose {{p_v0}} &rarr; {{p_v3}}, starting in the probabilistic phase, and after the switch the load collapsed (MaxVio {{p_mv450}}, {{p_dead}} dead) despite D8. Speed {{p_tps}} tokens/s, {{p_slow}}&times; slower than dense. Proposed a six-run diagnostic (v2.1) instead of guessing a fix (<a href="#m21">Section 9</a>).</li>
+<li><b>29 Sep:</b> built v2.1 (Cell 16): the six proposed runs plus a reference run G, all with the switch at step 100 so that both phases fit in 200 steps. Laptop test 17/17; B matched A exactly at every step. v2.1 handed over.</li>
+<li><b>29 Sep:</b> v2.1 ran on the T4 ({{d_date}}). The Drive mount failed, so data, R1 and the preview were rebuilt; R1 reproduced to {{r1_repeat}}, and the preview rise repeated ({{p2_rise}}). Diagnostic: B = A (code sound); the collapse is fixed by a 10&times; slower router (D, MaxVio {{d_mv_D}}); the loss rise appears whenever tokens are split across clones, even in the balanced, deterministic F. New leading explanation: the experts' learning rate is too high for their share of the data. Proposed v2.2 to test it (<a href="#m22">Section 11</a>).</li>
+<li><b>29 Sep:</b> built v2.2 (Cell 17): A, Aw, D, D35, D12, F35; experts' learning rate lowered by storing them as w / c (checked: same function to 3.2e-7). v2.1's runs switched off. Laptop test 17/17. v2.2 handed over.</li>
+<li><b>29 Sep:</b> v2.2 ran on the T4 ({{e_date}}); Drive failed again (third R1: {{r1c_final}}). Hypothesis confirmed: experts at 0.35&times; / 0.125&times; learning rate ended {{e_gap_D35}} / {{e_gap_D12}} against dense (the unscaled design: {{e_gap_D}}); MaxVio at most {{e_mv_D12}}, no dead experts. v2.1's dip in E was the learning rate (dense with the same warm-up dipped {{e_aw_dip}}). Proposed v3 with a fair control (R2s); four decisions waiting (<a href="#v3plan">Section 13</a>).</li>
+<li><b>29 Sep:</b> decided V3-1 to V3-4 as recommended. Built v3: Drive safety in Cell 3, earlier experiments switched off, Cells 18&ndash;20 (R2, R2s, R3; G5; verdicts; figures). Laptop test 17/17. v3 handed over.</li>
+<li><b>30 Sep:</b> v3 ran on the T4 with Drive mounted ({{f_pass}}; R3 resumed once after a disconnect). MoE {{f_conv}} &rarr; {{f_R3}}; vs R2s {{f_gap_R2s}}, vs R2 {{f_gap_R2}}. Found and fixed two reporting flaws in Cell 19 (a one-step final balance window, and a conclusion that named only the favourable comparison). Final results written into Section 14.</li>
+<li><b>30 Sep:</b> wrote the README (<code>tools/make_readme.py</code>: every number from the runs' summary files, read back and checked) and published the results report (<a href="https://claude.ai/artifact/7Ppswkd1eQZjMJHQR89sQc">Dense to MoE Results</a>, built by <code>tools/make_results.py</code>: the headline numbers, the path to the result, the write-up and every cell of the final notebook). The assignment is complete.</li>
+<li><b>30 Sep:</b> published the notebook walkthrough in the style of session 10's Step Harness (<a href="https://claude.ai/artifact/Bus2ncEUUnDkMUxNoZmZsY">The Expert Split</a>, built by <code>tools/make_walkthrough.py</code>): every cell with its source and T4 output, and a ledger of ten claims that turned out wrong.</li>
+</ul>
+
+</div>
+</body>
+</html>
